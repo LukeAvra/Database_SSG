@@ -104,16 +104,19 @@ def addData():
     #    name, room, rack, shelf, shelfLocation, quantity
     # 
     clear()
-    print("Please enter the item you wish to add to inventory")
+    print(" Please enter the item you wish to add to inventory (or type 'exit' to exit)")
     itemInput = '%' + input() + '%'
+    if(itemInput == '%exit%'):
+        return
     sql = '''SELECT DISTINCT Name FROM main_inventory WHERE Name ILIKE %s'''
     cur.execute(sql, [itemInput])
     records = cur.fetchall()
     if(records):
         clear()
+        print("There are similar items already in inventory")
         for record in records:
-            print(">>", record[0], "<<")
-        print('\nThere are similar items already in inventory\nPlease type in the full name of the item if you wish to add more to stock or adjust location, otherwise type "n"')
+            print(" >>", record[0], "<<")
+        print('\n Please type the full name of the item if you wish to adjust quantity or location, otherwise type "n" to add new item')
         userInput = input()
         
         if(userInput == 'n'):
@@ -125,27 +128,31 @@ def addData():
 #             records = cur.fetchall()
 #             print(">>", records[0][0], "<<")
 # =============================================================================
+            check = False
             for record in records:
                 if(record[0].lower() == userInput.lower()):
+                    clear()
                     print(">>", record[0], "<<")
-                    yesNoResponse = input("Is this the item you want to adjust? (y/n) ")
+                    yesNoResponse = input(" Is this the item you want to adjust? (y/n) ")
                     if(yesNoResponse == "y"):
                         check = True
                         adjustItem(cur, record[0])
                         return
+                    else:
+                        return
 
             if not check:
-                print("It doesn't seem as though that item is in our inventory")
+                print(" It doesn't seem as though that item is in our inventory")
                 
                
 
     else:
-        print("Item not found, new form created. Press Enter to continue...") 
+        print(" Item not found, new form created.\nPress Enter to continue...") 
         input()
         addItem(cur)
 
         
-    input("Press Enter to continue...")
+    input(" Press Enter to continue...")
     
 # =============================================================================
 #     # Adds data into the inventory ONLY IF THE NAME IS NOT ALREADY PRESENT         
@@ -160,6 +167,63 @@ def addData():
 # =============================================================================
     cur.close()
     
+def adjustItemHelper():
+    cur = conn.cursor()
+    while True:
+        # Essentially just the 'Display All' func but I didn't like having the 'press enter to continue bit
+        # ---------------------------------------------------   
+# =============================================================================
+#         sql = '''SELECT * FROM main_inventory'''
+#         cur.execute(sql) 
+#         fullRecords = cur.fetchall()
+#         recordTable = PrettyTable(['ID', 'Name', 'Room', 'Rack Number', 'Shelf Number', 'Shelf Location', 'Quantity'])
+#         for row in fullRecords:
+#             recordTable.add_row([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
+#             recordTable.add_row(['-----', '-----', '-----', '-----', '-----', '-----', '-----' ])
+#         clear()
+#         print(recordTable)
+# =============================================================================
+        # ---------------------------------------------------
+        displayAll()
+        
+        print(" Enter the full name of the Item you would like to adjust (or type 'exit' to exit)")
+        adjustInput = '%' + input("Item Name: ") + '%'
+        if(adjustInput.lower() == '%exit%'):
+            return
+        sql = '''SELECT Name FROM main_inventory
+                 WHERE Name ILIKE %s'''
+        cur.execute(sql, [adjustInput])
+        records = cur.fetchall()
+        check = False
+        if(records):
+            if(len(records) == 1):
+                print(">>", records[0][0], "<<")
+                yesNoResponse = input("Is this the item you want to adjust? (y/n) ")
+                if(yesNoResponse == "y"):
+                    check = True
+                    adjustItem(cur, records[0][0])
+                    return
+            else:
+                for record in records:
+                    print(" >> " + record[0] + " << ")
+                input("\n There are multiple results from that search, please be more specific\nPress Enter to continue...")
+                continue
+                    
+# =============================================================================
+#         for record in records:
+#             if(record[0].lower() == adjustInput.lower()):
+#                 print(">>", record[0], "<<")
+#                 yesNoResponse = input("Is this the item you want to adjust? (y/n) ")
+#                 if(yesNoResponse == "y"):
+#                     check = True
+#                     adjustItem(cur, record[0])
+#                     return
+# =============================================================================
+    
+        else:
+            input("It doesn't seem as though that item is in our inventory\nPress Enter to continue...")        
+
+
 def adjustItem(cur, item):
     #print("Item adjustment here")
     sql = '''SELECT * FROM main_inventory WHERE name=%s'''
@@ -328,10 +392,15 @@ def adjustItem(cur, item):
     
     return
 
-# Removes data from inventory with name matching the name passed to the function
-# May be a good idea to switch to Serial numbers when those are added to avert spelling issues
-def removeData(name):
+
+#
+#
+# FINISH ME, I NEED TO BE FINISHED
+#
+#
+def removeData():
     cur = conn.cursor()
+    print("")
     # Removes data if identical to name
     sql = '''DELETE FROM main_inventory WHERE name=%s'''
     cur.execute(sql, [name])
@@ -344,13 +413,17 @@ def displayAll():
     cur.execute(sql) 
     
     fullRecords = cur.fetchall()
-    recordTable = PrettyTable(['ID', 'Name', 'Room', 'Rack Number', 'Shelf Number', 'Shelf Location', 'Quantity'])
-    for row in fullRecords:
-        recordTable.add_row([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
-        recordTable.add_row(['-----', '-----', '-----', '-----', '-----', '-----', '-----' ])
     clear()
-    print(recordTable)
-    input("Press Enter to continue...")
+    printTable(fullRecords, 1)
+# =============================================================================
+#     recordTable = PrettyTable(['ID', 'Name', 'Room', 'Rack Number', 'Shelf Number', 'Shelf Location', 'Quantity'])
+#     for row in fullRecords:
+#         recordTable.add_row([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
+#         recordTable.add_row(['-----', '-----', '-----', '-----', '-----', '-----', '-----' ])
+#     clear()
+#     print(recordTable)
+# =============================================================================
+    #input("Press Enter to continue...")
     #print("\n\n\n")        
     cur.close()
     
@@ -381,16 +454,27 @@ def displayParticular():
             cur.execute(sql, [nameInput])
             records = cur.fetchall()
             printTable(records, 0)
+            input("Press Enter to continue...")
             
         # Search By Serial Number
         elif(userInput == 2):
             clear()
             print(" Please enter the serial number of the product")
-            serialInput = int(input())
+            try:
+                serialInput = int(input())
+            except ValueError:
+                print("Please enter a valid integer\nPress Enter to continue...")
+                input()
+                continue
             sql = '''SELECT * from main_inventory WHERE ID=%s'''
             cur.execute(sql, [serialInput])
             records = cur.fetchall()
-            printTable(records, 0)
+            if(records):
+                printTable(records, 0)
+                input("Press Enter to continue...")
+            else:
+                print("Item with serial", serialInput, "is not in the database\nPress Enter to continue...")
+                input()
         
         # Search By Inventory Room
         elif(userInput == 3):
@@ -401,11 +485,19 @@ def displayParticular():
             records = cur.fetchall()
             for row in records:
                 print("--", row[0], "--")
-            roomInput = '%' + input() + '%'
+            roomInput = '%' + input("Room Name: ") + '%'
             sql = '''SELECT * FROM main_inventory WHERE Room ILIKE %s'''
             cur.execute(sql, [roomInput])
             records = cur.fetchall()
-            printTable(records, 1)
+            if(records):
+                if(len(records) == 1):
+                    printTable(records, 0)
+                    input("Press Enter to continue...")
+                else:
+                    printTable(records, 1)
+                    input("Press Enter to continue...")
+            else:
+                print("Could not find location in inventory")
         
         # Return To previous menu
         elif(userInput == 4):
@@ -427,7 +519,6 @@ def printTable(records, style):
             recordTable.add_row([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
             recordTable.add_row(['-----', '-----', '-----', '-----', '-----', '-----', '-----' ])
     print(recordTable)
-    input("Press Enter to continue...")
 
 # Home screen for CLI
 def admin():   
@@ -438,6 +529,8 @@ def admin():
         print(" 1) Display Entire Inventory")
         print(" 2) Display Details on Particular Inventory Items")
         print(" 3) Add Item to Inventory")
+        print(" 4) Adjust Item in Inventory")
+        print(" 5) Remove Item from Inventory")
         
         try:
             userInput = int(input())
@@ -446,10 +539,15 @@ def admin():
             continue
         if(userInput == 1):
             displayAll()
+            input("Press Enter to continue...")
         elif(userInput == 2):
             displayParticular()
         elif(userInput == 3):
             addData()
+        elif(userInput == 4):
+            adjustItemHelper()
+        elif(userInput == 5):
+            removeData()
         else:
             print(" Incorrect input, please enter the number corresponding with your choice. \n")
 
@@ -461,7 +559,9 @@ if __name__ == '__main__':
     
     
     
-    
+#
+# Finish Remove Data Function
+#
                     
 # Add in Admin/User accounts?
 #   Admin can do everything
@@ -475,6 +575,10 @@ if __name__ == '__main__':
 
 #
 # While adjusting values in database, mayne pull out to a different function for the sql statment, could make code cleaner (two sections, one for name one for number)
+#
+
+#
+# Might want to add ability to search by Serial Number for adjusting items
 #
 
 
