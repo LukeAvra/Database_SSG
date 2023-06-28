@@ -4,7 +4,7 @@ Created on Mon Jun 26 09:36:29 2023
 
 @author: Luke Avra
 """
-
+import Database_Globals as DG
 from prettytable import PrettyTable
 import psycopg2
 from config import config
@@ -406,12 +406,6 @@ def adjustItem(cur, item):
     
     return
 
-
-#
-#
-# FINISH ME, I NEED TO BE FINISHED
-#
-#
 def removeData():
     cur = conn.cursor()
     clear()
@@ -514,7 +508,7 @@ def removeData():
     cur.close()
 
 def displayAll():
-    cur = conn.cursor()
+    cur = DG.conn.cursor()
     sql = '''SELECT * FROM main_inventory'''
     cur.execute(sql) 
     
@@ -652,6 +646,7 @@ def admin():
 
 if __name__ == '__main__':
     conn = connect()
+    DG.main()
     admin()
     close()
     
