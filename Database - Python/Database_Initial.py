@@ -58,7 +58,15 @@ def create():
     
     print(" Test table created successfully...")
     cur.close()
-    
+
+# Neither of these work yet, implement and incorporate when you get the chance
+######################    
+def searchBySerial():
+    return
+
+def searchByName():
+    return
+######################
 # Simple initialization function to place some test data into the table created by create() function
 def initialData():
 
@@ -255,6 +263,12 @@ def adjustItem(cur, item):
             if(idInput.lower() == 'exit'):
                 return False
             else:
+                try:
+                    idInput = int(idInput)
+                except ValueError:
+                    input("Please enter an integer\n\nPress Enter to continue...")
+                    return
+                    
                 sql = '''UPDATE main_inventory
                          SET id=%s
                          WHERE Name=%s'''
@@ -400,11 +414,103 @@ def adjustItem(cur, item):
 #
 def removeData():
     cur = conn.cursor()
-    print("")
+    clear()
+    while True:
+        displayAll()
+        print(" Delete item by name or serial number?")
+        print(" 1) Name")
+        print(" 2) Serial Number")
+        print(" 3) Exit")
+        userChoice = input()
+        try:
+            userChoice = int(userChoice)
+        except ValueError:
+            input("Please enter a valid integer\n\n Press Enter to continue...")
+            continue
+        if(userChoice == 1):
+            deletion = '%' + input(" Enter the name of the item you wish to delete\n Name: ") +'%'
+            
+            sql = '''SELECT * FROM main_inventory WHERE Name ILIKE %s'''
+            cur.execute(sql, [deletion])
+            records = cur.fetchall()
+            if(not records):
+                input(" Could not find a record of that item\n\n Press Enter to continue...")
+                continue
+            elif(len(records) > 1):
+                printTable(records, 1)
+                input("Multiple items found, please enter the full name of the item to be deleted or delete by serial number\n\n Press Enter to continue...")
+                continue
+            else:
+                printTable(records, 0)
+                yesNoSelection = input("Is this the item you want to delete? (y, n)\n")
+                if(yesNoSelection.lower() == 'n'):
+                    input("Operation cancelled\n\n Press Enter to continue...")
+                    continue
+                elif(yesNoSelection.lower() == 'y'):
+                    print("Are you sure you want to delete item:", records[0][1] + "? (y/n)")
+                    deleteConfirmation = input()
+                    if(deleteConfirmation.lower() == 'n'):
+                        input("Operation cancelled\n\n Press Enter to continue...")
+                        continue
+                    elif(deleteConfirmation.lower() == 'y'):
+                        deletion = records[0][1]
+                        sql = '''DELETE FROM main_inventory WHERE Name=%s'''
+                        cur.execute(sql, [deletion])
+                        conn.commit()
+                        print("Item:", deletion, "deleted succesfully\n\n Press Enter to continue...")
+                        input()
+                        continue
+                else:
+                    continue
+                        
+            
+        elif(userChoice == 2):
+            deletion = input(" Enter the Serial Number of the item you wish to delete\n Serial Number: ")
+            try:
+                deletion = int(deletion)
+            except ValueError:
+                input(" Please enter a valid integer \n\n Press Enter to continue...")
+                continue
+            sql = '''SELECT * FROM main_inventory WHERE id=%s'''
+            cur.execute(sql, [deletion])
+            records = cur.fetchall()
+            if(records):
+                if(len(records) > 1):
+                    printTable(records, 1)
+                    input(" There seem to be more than one records with that Serial Number\n Please return to the main menu to adjust records or delete by item name \n\n Press Enter to continue...")
+                    return
+                else:
+                    printTable(records, 0)
+                    yesNoSelection = input("Are you sure you wish to delete this item? (y/n)\n")
+                    if(yesNoSelection.lower() == 'n'):
+                        input("Operation cancelled\n\n Press Enter to continue...")
+                        continue
+                    elif(yesNoSelection.lower() == 'y'):
+                        sql = '''DELETE FROM main_inventory WHERE id=%s'''
+                        cur.execute(sql, [records[0][0]])
+                        conn.commit()
+                        print("Item:", records[0][1], "deleted successfully\n\n Press Enter to continue...")
+                        input()
+                        continue   
+            else:
+                input(" Could not find a record of that item\n\n Press Enter to continue...") 
+                continue
+        elif(userChoice == 3):
+            return
+            
+        else:
+            input("Please enter a valid response:\n\n Press Enter to continue...")
+            continue
+        
+
+         
+    
     # Removes data if identical to name
-    sql = '''DELETE FROM main_inventory WHERE name=%s'''
-    cur.execute(sql, [name])
-    print(" Items removed from inventory database")
+# =============================================================================
+#     sql = '''DELETE FROM main_inventory WHERE name=%s'''
+#     cur.execute(sql, [name])
+#     print(" Items removed from inventory database")
+# =============================================================================
     cur.close()
 
 def displayAll():
@@ -414,17 +520,7 @@ def displayAll():
     
     fullRecords = cur.fetchall()
     clear()
-    printTable(fullRecords, 1)
-# =============================================================================
-#     recordTable = PrettyTable(['ID', 'Name', 'Room', 'Rack Number', 'Shelf Number', 'Shelf Location', 'Quantity'])
-#     for row in fullRecords:
-#         recordTable.add_row([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
-#         recordTable.add_row(['-----', '-----', '-----', '-----', '-----', '-----', '-----' ])
-#     clear()
-#     print(recordTable)
-# =============================================================================
-    #input("Press Enter to continue...")
-    #print("\n\n\n")        
+    printTable(fullRecords, 1)     
     cur.close()
     
 
@@ -453,6 +549,9 @@ def displayParticular():
             sql = '''SELECT * FROM main_inventory WHERE Name ILIKE %s'''
             cur.execute(sql, [nameInput])
             records = cur.fetchall()
+            if(not records):
+                input(' Could not find that item\n\n Press Enter to continue...')
+                continue
             printTable(records, 0)
             input("Press Enter to continue...")
             
@@ -469,12 +568,12 @@ def displayParticular():
             sql = '''SELECT * from main_inventory WHERE ID=%s'''
             cur.execute(sql, [serialInput])
             records = cur.fetchall()
-            if(records):
-                printTable(records, 0)
-                input("Press Enter to continue...")
-            else:
+            if(not records):
                 print("Item with serial", serialInput, "is not in the database\nPress Enter to continue...")
                 input()
+                continue
+            printTable(records, 0)
+            input("Press Enter to continue...")
         
         # Search By Inventory Room
         elif(userInput == 3):
@@ -497,7 +596,7 @@ def displayParticular():
                     printTable(records, 1)
                     input("Press Enter to continue...")
             else:
-                print("Could not find location in inventory")
+                input("Could not find location in inventory\n\n Press Enter to continue...")
         
         # Return To previous menu
         elif(userInput == 4):
@@ -557,12 +656,7 @@ if __name__ == '__main__':
     close()
     
     
-    
-    
-#
-# Finish Remove Data Function
-#
-                    
+               
 # Add in Admin/User accounts?
 #   Admin can do everything
 #   Users can only view records
@@ -574,11 +668,16 @@ if __name__ == '__main__':
 # 
 
 #
-# While adjusting values in database, mayne pull out to a different function for the sql statment, could make code cleaner (two sections, one for name one for number)
+# While adjusting values in database, maybe pull out to a different function for the sql statment, could make code cleaner (two sections, one for name one for number)
 #
 
 #
 # Might want to add ability to search by Serial Number for adjusting items
+#
+
+#
+# Not sure if it'll actually save space but finish the searchBySerial and searchByName functions, both should just return 'records'
+# See if they can be implemented 
 #
 
 
