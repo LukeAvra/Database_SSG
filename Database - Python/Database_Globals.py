@@ -36,7 +36,17 @@ def clear():
     if name == 'nt': 
         x = system('cls') 
     else: 
-        x = system('clear') 
+        x = system('clear')
+        
+def roomList():
+    cur = conn.cursor()
+    sql = '''SELECT DISTINCT Room FROM main_inventory'''
+    cur.execute(sql)
+    records = cur.fetchall()
+    for row in records:
+        roomList.append(row[0])
+    
+    return roomList
 
 def main():
     global conn 

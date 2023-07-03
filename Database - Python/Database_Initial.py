@@ -613,7 +613,7 @@ def printTable(records, style):
             recordTable.add_row(['-----', '-----', '-----', '-----', '-----', '-----', '-----' ])
     print(recordTable)
 
-# Home screen for CLI
+# Home screen for CLIw
 def admin():   
     clear()
     print(" =============Special Services Group Inventory Managment=============")
@@ -648,7 +648,7 @@ if __name__ == '__main__':
     conn = connect()
     DG.main()
     admin()
-    close()
+    DG.close()
     
     
                
