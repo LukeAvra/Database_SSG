@@ -42,11 +42,12 @@ def roomList():
     cur = conn.cursor()
     sql = '''SELECT DISTINCT Room FROM main_inventory'''
     cur.execute(sql)
+    rooms = []
     records = cur.fetchall()
     for row in records:
-        roomList.append(row[0])
+        rooms.append(row[0])
     
-    return roomList
+    return rooms
 
 def main():
     global conn 

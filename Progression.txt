@@ -1,0 +1,15 @@
+=================================================================================
+=Which fields will we want exactly? Should establish database before moving further
+=================================================================================
+=Which Rooms will we want for inventory storage?
+=================================================================================
+
+
+
+
+Finish up the GUI
+Need to add 'adjust' and 'remove' items
+
+Find a way to implement bill of materials
+
+Find a way to implement the barcode scanner and reader
