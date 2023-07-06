@@ -31,7 +31,7 @@ def close():
         conn.close()
         print('Database connection closed.')
         
-# Small function just to clear the screen #
+# Small function just to clear the screen for CLI #
 def clear(): 
     if name == 'nt': 
         x = system('cls') 
@@ -40,7 +40,7 @@ def clear():
         
 def roomList():
     cur = conn.cursor()
-    sql = '''SELECT DISTINCT Room FROM main_inventory'''
+    sql = '''SELECT DISTINCT Room FROM ssg_test_locations'''
     cur.execute(sql)
     rooms = []
     records = cur.fetchall()
@@ -48,6 +48,47 @@ def roomList():
         rooms.append(row[0])
     
     return rooms
+
+def searchID(ID):
+    cur = conn.cursor()
+    sql = '''SELECT Barcode FROM ssg_test_inventory
+            WHERE ManufacturerID = %s'''
+    cur.execute(sql, [ID])
+    records = cur.fetchall()
+    barcode = records[0][0]
+    
+    sql = '''SELECT * FROM ssg_test_inventory
+           WHERE ManufacturerID = %s'''
+    cur.execute(sql, [ID])
+    invRecords = cur.fetchall()
+
+            
+    sql = '''SELECT * FROM ssg_test_locations
+           WHERE Barcode = %s'''
+    cur.execute(sql, [barcode])
+    locRecords = cur.fetchall()
+    
+    return invRecords, locRecords
+
+def searchTotal(ID, version):
+    cur = conn.cursor()
+    sql = '''SELECT Barcode FROM ssg_test_inventory
+            WHERE %s = %s'''
+    cur.execute(sql, [version, ID])
+    records = cur.fetchall()
+    barcode = records[0][0]
+    
+    sql = '''SELECT * FROM ssg_test_inventory
+           WHERE %s = %s'''
+    cur.execute(sql, [version, ID])
+    invRecords = cur.fetchall()
+    
+    sql = '''SELECT * FROM ssg_test_locations
+           WHERE Barcode = %s'''
+    cur.execute(sql, [barcode])
+    locRecords = cur.fetchall()
+    
+    return invRecords, locRecords
 
 def main():
     global conn 

@@ -42,17 +42,39 @@ def clear():
 #Initial create function, create's an empty inventory table with the listed columns
 def create():
     cur = conn.cursor()
-    sql = '''CREATE TABLE IF NOT EXISTS main_inventory (
-                id serial PRIMARY KEY,
-                Name VARCHAR(100) NOT NULL,
-                Room VARCHAR(100) NOT NULL,
-                Rack SMALLINT NOT NULL,
-                Shelf SMALLINT NOT NULL,
-                Shelf_Location SMALLINT NOT NULL,
-                Quantity INT NOT NULL
+    sql = '''CREATE TABLE IF NOT EXISTS ssg_test_inventory (
+                ManufacturerID VARCHAR(100),
+                SupplierPartNum VARCHAR(100),
+                Name VARCHAR(100),
+                Description VARCHAR(100),
+                Room VARCHAR(100),
+                Rack SMALLINT,
+                Shelf SMALLINT,
+                Shelf_Location SMALLINT,
+                Quantity INT
                 );
             
             END'''
+            
+            # Manufacturers part number VARCHAR
+            # Suppliers part number    VARCHAR
+            # Text Description         VARCHAR
+            
+            
+    # Initial Database Setup
+# =============================================================================
+#     sql = '''CREATE TABLE IF NOT EXISTS main_inventory (
+#                 id serial PRIMARY KEY,
+#                 Name VARCHAR(100) NOT NULL,
+#                 Room VARCHAR(100) NOT NULL,
+#                 Rack SMALLINT NOT NULL,
+#                 Shelf SMALLINT NOT NULL,
+#                 Shelf_Location SMALLINT NOT NULL,
+#                 Quantity INT NOT NULL
+#                 );
+#             
+#             END'''
+# =============================================================================
             
     cur.execute(sql)
     
