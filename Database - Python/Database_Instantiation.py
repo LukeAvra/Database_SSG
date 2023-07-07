@@ -10,7 +10,7 @@ import Database_Globals as DG
 def create():
     cur = conn.cursor()
     sql = '''CREATE TABLE IF NOT EXISTS ssg_test_inventory (
-                ManufacturerID UNIQUE VARCHAR(100),
+                ManufacturerID VARCHAR(100),
                 SupplierPartNum VARCHAR(100),
                 Name VARCHAR(100),
                 Description VARCHAR(100),
@@ -28,6 +28,10 @@ def create():
             CREATE TABLE IF NOT EXISTS ssg_test_users (
                 userCode VARCHAR(100),
                 userName VARCHAR(100)
+                );
+            CREATE TABLE IF NOT EXISTS ssg_test_boms (
+                bom_id SMALLINT,
+                bom_name VARCHAR(100)
                 );
             END'''
             
@@ -75,7 +79,7 @@ def main():
     global conn 
     conn = DG.connect()
     create()
-    testData()
+    #testData()
 
 if __name__ == '__main__':
     main()

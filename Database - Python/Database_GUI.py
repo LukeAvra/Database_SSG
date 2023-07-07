@@ -7,19 +7,13 @@ Created on Thu Jul  6 08:32:28 2023
 import tkinter as tk
 from tkinter import ttk
 import Database_Globals as DG
+import random
 
-# Needs to be implemented
-# Maybe just use an established search function with an extra confirmation box
-#################################
+
 def removeItem():
     return
-#################################
 
 
-# Needs to be implemented, can probably use essentially the same page as newItemGUI but prefill values and then pull everything back in
-# in the same way to overwrite
-
-#################################
 def adjustItemGUI(item_for_adjustment):
     cur = DG.conn.cursor()
     sql = '''SELECT Barcode FROM ssg_test_inventory
@@ -189,9 +183,6 @@ def adjustItemGUI(item_for_adjustment):
 #################################
 
 
-
-# Add in SQL statement to get item added
-################################
 def newItemGUI():
     newItemWindow = tk.Tk()
     newItemWindow.geometry("600x400")
@@ -333,13 +324,46 @@ def newItemGUI():
 # Present records, maybe in listbox
 #
 def searchGUI():
-    print(searchVar.get(), searchType.get())
+    cur = DG.conn.cursor()
+    #print(searchVar.get(), searchType.get())
     if(searchType.get() == 'Manufacturer ID'):
         invRecords, locRecords = DG.searchID(searchVar.get())
         return
     ## Need to finish ##########################################################################################################
     elif(searchType.get() == 'Item Name'):
-        DG.searchByName()
+        mainMenuWindow.destroy()
+        searchWindow = tk.Tk()
+        searchWindow.title("Search Results")
+        searchWindow.geometry("600x400")
+        
+        records = DG.searchByName(searchVar.get())
+        if(records):
+            def adjustItemHelper():
+                selectedItem = invListbox.get(invListbox.curselection())
+                sql = '''SELECT ManufacturerID FROM ssg_test_inventory WHERE Name=%s;'''
+                cur.execute(sql, [selectedItem])
+                ID_for_adjustment = cur.fetchall()
+                searchWindow.destroy()
+                adjustItemGUI(ID_for_adjustment[0][0])
+                return
+            
+            invLabel = tk.Label(searchWindow, text='Similar items found\nSelect item to adjust or click new item')
+            invListbox = tk.Listbox(searchWindow, width=40, height=5, selectmode = 'single')
+            invScrollbar = tk.Scrollbar(searchWindow)
+            selectedItem = invListbox.curselection()
+            adjustItemButton = tk.Button(searchWindow, text='Adjust Item', command = adjustItemHelper)
+            
+            invLabel.place(relx=.4, rely=.3, anchor='center')
+            invListbox.place(relx=.4, rely=.5, anchor='center')
+            invScrollbar.place(relx=.59, rely=.5, anchor='center')
+            adjustItemButton.place(relx=.4, rely=.75, anchor='center')
+            
+            invListbox.config(yscrollcommand = invScrollbar.set)
+            invScrollbar.config(command = invListbox.yview)
+            
+            for i in range(len(records)):
+                invListbox.insert(i, records[i][0])
+        
         return
     
     if(searchVar.get() == ""):
@@ -362,47 +386,7 @@ def addDataGUI():
         addItemWindow.destroy()
         newItemGUI()
         return
-        
-    
-# =============================================================================
-#     global selectedItem
-#     selectedItem = tk.StringVar()
-#     cur = DG.conn.cursor()
-# 
-# 
-#         userInputItem = '%' + item_to_add.get() + '%'
-#         sql = '''SELECT DISTINCT Name FROM ssg_test_inventory WHERE Name ILIKE %s'''
-#         cur.execute(sql, [userInputItem])
-#         records = cur.fetchall()
-#         if(records):
-#             def adjustItemHelper():
-#                 selectedItem = invListbox.get(invListbox.curselection())
-#                 adjustItemGUI(selectedItem)
-#                 return
-#             
-#             invLabel = tk.Label(addItemWindow, text='Similar items found\nSelect item to adjust or click new item')
-#             invListbox = tk.Listbox(addItemWindow, width=40, height=5, selectmode = 'single')
-#             invScrollbar = tk.Scrollbar(addItemWindow)
-#             selectedItem = invListbox.curselection()
-#             adjustItemButton = tk.Button(addItemWindow, text='Adjust Item', command = adjustItemHelper)
-#             newItemButton = tk.Button(addItemWindow, text='New Item', command = lambda: [addItemWindow.destroy(), newItemGUI()])
-#             
-#             invLabel.place(relx=.4, rely=.3, anchor='center')
-#             invListbox.place(relx=.4, rely=.5, anchor='center')
-#             invScrollbar.place(relx=.59, rely=.5, anchor='center')
-#             adjustItemButton.place(relx=.4, rely=.75, anchor='center')
-#             newItemButton.place(relx=.6, rely=.75, anchor='center')
-#             
-#             invListbox.config(yscrollcommand = invScrollbar.set)
-#             invScrollbar.config(command = invListbox.yview)
-#             
-#             for i in range(len(records)):
-#                 invListbox.insert(i, records[i][0])
-# =============================================================================
-        
-    
     return
-
 
 def addItemGUI():
     global addItemWindow
@@ -424,8 +408,67 @@ def addItemGUI():
     addItemManufacturerButton.place(relx=.7, rely=.15, anchor='center')
     returnButton.place(relx=.85, rely=.8, anchor = 'center')
     
-    
     addItemWindow.mainloop()
+    
+    return
+
+def createBOMWindow():
+    bomWindow = tk.Tk()
+    bomWindow.geometry("600x400")
+    bomWindow.title("Bill of Materials")
+    bomID = tk.StringVar()
+    cur = DG.conn.cursor()
+    
+    def createBom():
+        #print(bomID.get())
+        sql='''SELECT * FROM ssg_test_inventory
+                WHERE BOM_ID = %s'''
+        cur.execute(sql, [bomID.get()])
+        records = cur.fetchall()
+        if records:
+            tk.messagebox.showerror("showerror", "BOM ID already exists")
+            bomWindow.destroy()
+            createBOMWindow()
+        else:
+            tableName = "BOM_" + bomID.get()
+            
+            sql = '''CREATE TABLE IF NOT EXISTS %s(
+                       ManufacturerID VARCHAR(100)
+                       QuantityNeeded SMALLINT
+                    )'''
+
+            cur.execute(sql, [tableName])
+            
+            return
+        
+        return
+    
+    def checkInventory():
+        bomString = bomID.get()
+        
+        bomList = [int(e.strip()) if e.strip().isdigit() else e for e in bomString.split(',')]
+        for bom in bomList:
+            bomTableName = "BOM_" + str(bom)
+            print(bomTableName)
+            sql = '''SELECT ManufacturerID FROM %s'''
+            cur.execute(sql, [bomTableName])
+            records = cur.fetchall()
+            if(records):
+                for record in records:
+                    sql = '''SELECT Quantity from ssg_test_inventory
+                            WHERE ManufacturerID = %s;'''
+                    cur.execute(sql, [record[0][0]])
+                    quantity = cur.fetchall()
+                    print("Manufacurer ID: ", record[0][0], "\nQuantity: ", quantity)
+    
+    
+    bomEntry = tk.Entry(bomWindow, textvariable = bomID, font=('calibre', 12))
+    createBomButton = tk.Button(bomWindow, text = "Create", command=createBom)
+    checkInventoryButton = tk.Button(bomWindow, text="Check Inventory", command=checkInventory)
+    
+    bomEntry.place(relx=.5, rely=.5, anchor = 'center')
+    createBomButton.place(relx=.4, rely=.6, anchor = 'center')
+    checkInventoryButton.place(relx=.6, rely=.6, anchor='center')
     
     return
 
@@ -447,8 +490,24 @@ def mainMenu():
                         values = choiceList,
                         textvariable=searchType
                         )
-
     searchChoiceBox.set('Manufacturer ID')
+    
+    def generateBarcode():
+        barcodeList = []
+        odds = 0
+        for i in range(0, 11):
+            barcodeList.append(random.randrange(0, 10))
+        for i in range(0, 11, 2):
+            print(i)
+            odds = odds + barcodeList[i]
+        odds = odds * 3
+        print('\n')
+        for i in range(1, 10, 2):
+            odds = odds + barcodeList[i]
+            
+        checkDigit = 10 - odds // 10
+        print(barcodeList, checkDigit)
+        
     
     searchInventoryLabel = tk.Label(mainMenuWindow, text='Search', font=('calibre', 12, 'bold'))
     searchInventoryEntry = tk.Entry(mainMenuWindow, textvariable = searchVar, font=('calibre', 12))  
@@ -456,7 +515,9 @@ def mainMenu():
     searchButton = tk.Button(mainMenuWindow, text = "Search", command = searchGUI)
     addItemButton = tk.Button(mainMenuWindow, text = "Add Item", command = lambda: [mainMenuWindow.destroy(), addItemGUI()])
     removeItemButton = tk.Button(mainMenuWindow, text = "Remove Item", command = removeItem)
-  
+    createBomButton = tk.Button(mainMenuWindow, text = "BOMs", command = lambda: [mainMenuWindow.destroy(), createBOMWindow()])
+    barcodeGeneratorButton = tk.Button(mainMenuWindow, text = "Generate Barcode", command = generateBarcode)
+    
     # Row 1
     searchInventoryLabel.place(relx=.15, rely=.1, anchor='center')
     searchInventoryEntry.place(relx=.38, rely=.1, anchor='center')    
@@ -468,6 +529,13 @@ def mainMenu():
     
     # Row 3
     removeItemButton.place(relx=.5, rely=.3, anchor='center')
+    
+    # Row 4
+    createBomButton.place(relx=.5, rely=.4, anchor='center')
+    
+    # Row 5
+    barcodeGeneratorButton.place(relx=.5, rely=.5, anchor='center')
+    
     
     mainMenuWindow.mainloop()
 

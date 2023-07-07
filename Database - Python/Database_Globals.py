@@ -90,6 +90,14 @@ def searchTotal(ID, version):
     
     return invRecords, locRecords
 
+def searchByName(searchItem):
+    cur = conn.cursor()
+    userInputItem = '%' + searchItem + '%'
+    sql = '''SELECT DISTINCT Name FROM ssg_test_inventory WHERE Name ILIKE %s'''
+    cur.execute(sql, [userInputItem])
+    records = cur.fetchall()
+    return records
+
 def main():
     global conn 
     conn = connect()
