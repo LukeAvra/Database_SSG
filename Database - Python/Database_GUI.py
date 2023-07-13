@@ -363,6 +363,33 @@ def adjustItemGUI(item_for_adjustment):
             adjustedshelfLocation = None
         else:
             adjustedshelfLocation = shelfLocationEntry.get()
+            
+        # Check if Barcode is already in system
+        # does extraneous checks on Inventory, Locations and Barcodes. Adding items doesn't have to be blazing fast
+        #
+        # This is directly copied from the newItem function, may be edge cases where this is too strict
+        # I'm just going to wait until someone complains or I notice an issue before adjusting it though
+        #
+        sql = '''SELECT * FROM barcodes WHERE code = %s'''
+        cur.execute(sql, [adjustedBarcode])
+        barRecords = cur.fetchall()
+        sql = '''SELECT * FROM ssg_test_inventory WHERE Barcode = %s'''
+        cur.execute(sql, [adjustedBarcode])
+        invBarRecords = cur.fetchall()
+        sql = '''SELECT * FROM ssg_test_locations WHERE Barcode = %s'''
+        cur.execute(sql, [adjustedBarcode])
+        locBarRecords = cur.fetchall()
+        if(barRecords or locBarRecords or invBarRecords):
+            tk.messagebox.showerror('Error', 'Barcode has already been found in our system')
+            return
+        
+        # Check if Manufacturer ID is already in system
+        sql = '''SELECT * FROM ssg_test_inventory WHERE ManufacturerID = %s'''
+        cur.execute(sql, [adjustedManID])
+        manIDRecords = cur.fetchall()
+        if(manIDRecords):
+            tk.messagebox.showerror('Error', 'Manufacturer ID has already been found in our system')
+            return
         
         #ManufacturerID, SupplierPartNum, Name, Description, Quantity, Barcode, BOM_ID
         sql = '''UPDATE ssg_test_inventory
