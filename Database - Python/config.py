@@ -8,8 +8,10 @@ Created on Mon Jun 26 09:36:29 2023
 from configparser import ConfigParser
 
 
-def config(filename='database.ini', section='postgresql'):
-    
+# =============================================================================
+# def config(filename='database.ini', section='postgresql'):
+# =============================================================================
+def config(filename='C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database.ini', section='postgresql'):  
     parser = ConfigParser()
     parser.read(filename)
     db = {}

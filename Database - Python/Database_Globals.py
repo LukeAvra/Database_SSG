@@ -20,7 +20,7 @@ def connect():
         # Connect to the server 
         print('Connecting to the PostgreSQL database...')
         conn = psycopg2.connect(**params)
-
+        conn.autocommit = True
     except(Exception, psycopg2.DatabaseError) as error:
         print(error)
     finally:
@@ -55,18 +55,22 @@ def searchID(ID):
             WHERE ManufacturerID = %s'''
     cur.execute(sql, [ID])
     records = cur.fetchall()
-    barcode = records[0][0]
+    if(records):
+        barcode = records[0][0]
+        
+        sql = '''SELECT * FROM ssg_test_inventory
+               WHERE ManufacturerID = %s'''
+        cur.execute(sql, [ID])
+        invRecords = cur.fetchall()
     
-    sql = '''SELECT * FROM ssg_test_inventory
-           WHERE ManufacturerID = %s'''
-    cur.execute(sql, [ID])
-    invRecords = cur.fetchall()
-
-            
-    sql = '''SELECT * FROM ssg_test_locations
-           WHERE Barcode = %s'''
-    cur.execute(sql, [barcode])
-    locRecords = cur.fetchall()
+                
+        sql = '''SELECT * FROM ssg_test_locations
+               WHERE Barcode = %s'''
+        cur.execute(sql, [barcode])
+        locRecords = cur.fetchall()
+    else:
+        invRecords = None
+        locRecords = None
     
     return invRecords, locRecords
 
