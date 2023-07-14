@@ -4,11 +4,12 @@ Created on Thu Jul  6 08:32:28 2023
 
 @author: Luke
 """
+import sys
 import tkinter as tk
 from tkinter import ttk
 import Database_Globals as DG
 import random
-import sys
+
 
 def searchGUI():
     cur = DG.conn.cursor()
@@ -602,24 +603,26 @@ def createBOMGUI():
         records = cur.fetchall()
         if records:
             tk.messagebox.showerror("showerror", "BOM ID already exists")
-            createBom(1)
-            #bomEntry.delete(0, tk.END)
+            nameBom(1)
             return
         else:
-            print("Create BOM Table Here")
-            createBom(0)
+            nameBom(0)
     
-    def createBom(version):
+    def nameBom(version):
         bomWindow.destroy()
         createBomWindow = tk.Tk()
         createBomWindow.title("Create BOM")
         createBomWindow.geometry("600x400")
+            
+        
 
         def addBomItem():
             inv, loc = DG.searchID(manIDEntry.get())
             sql = '''SELECT manufacturerid FROM ssg_test_inventory WHERE bom_id = %s'''
             cur.execute(sql, [bomID.get()])
-            selfID = cur.fetchall()[0][0]
+            selfID = cur.fetchall()
+            if(selfID):
+                selfID = selfID[0][0]
             try:
                 quant = int(quantityEntry.get())
             except ValueError:
@@ -646,14 +649,64 @@ def createBOMGUI():
             return
         
         def finalize():
+        
+            # CREATING BOM TABLE
+            tableName = "bom_" + str(bomID.get())
+            sql = '''CREATE TABLE IF NOT EXISTS ''' + tableName + '''(
+                        ManufacturerID VARCHAR(100),
+                        QuantityNeeded SMALLINT
+                    );'''
+            cur.execute(sql)
+            
+            # INSERTING ALL MANUFACTURER IDS AND QUANTITIES
             for line in bomTree.get_children():
-                print(bomTree.item(line).get('values')[0])
-                print(bomTree.item(line).get('values')[1])
+                sql = '''INSERT INTO ''' + tableName + '''(ManufacturerID, QuantityNeeded) VALUES (%s, %s);'''
+                cur.execute(sql, [bomTree.item(line).get('values')[0], bomTree.item(line).get('values')[1]])
                 
+            # INSERTING BOM_ID# and BOM_NAME INTO BOM TABLE OF TABLES
+            # FIGURE OUT WHERE YOU'RE GOING TO GRAB THE NAME FROM BECAUSE YOU NEED IT
+            sql = '''INSERT INTO ssg_test_boms (bom_id, bom_name) VALUES (%s, %s);'''
+            cur.execute(sql, [bomID.get(), ])
+                
+# =============================================================================
+#                 print(bomTree.item(line).get('values')[0])
+#                 print(bomTree.item(line).get('values')[1])
+# =============================================================================
+            return
+        
+        def createBOM():
+            manIDEntry.focus()
+            manIDEntry.bind('<Return>', lambda e: addBomItem())
+            quantityEntry.bind('<Return>', lambda e: addBomItem())
+            
+            manIDLabel.place(relx=.15, rely=.2, anchor='center')
+            manIDEntry.place(relx=.4, rely=.2, anchor = 'center')
+            quantityLabel.place(relx=.56, rely=.2, anchor='center')
+            quantityEntry.place(relx=.66, rely=.2, anchor = 'center')
+            addItemButton.place(relx=.8, rely=.2, anchor = 'center')
+            removeItemButton.place(relx=.35, rely=.9, anchor = 'center')
+            bomTree.place(relx=.5, rely=.55, anchor = 'center')
+            bomScrollbar.place(relx=.65, rely=.55, anchor = 'center')
+            completeBomButton.place(relx=.65, rely=.9, anchor = 'center')
+            
+            bomTree.configure(yscrollcommand = bomScrollbar.set)
+            bomTree["columns"] = ("1", "2")
+            bomTree['show'] = 'headings' 
+            bomTree.column("1", width = 100, anchor = 'w')
+            bomTree.column("2", width = 100, anchor = 'w')
+            bomTree.heading("1", text = "Manufacturer ID")
+            bomTree.heading("2", text = "Quantity")
+            
+            if(version == 1):
+                tableName = "bom_" + str(bomID.get())
+                sql = '''SELECT * FROM ''' + tableName + ''';'''
+                cur.execute(sql)
+                records = cur.fetchall()
+                for record in records:
+                    bomTree.insert("", 'end', values=(record[0], record[1]))
             return
 
-        bomIDstr = "BOM # " + str(bomID.get())
-        bomIDLabel = tk.Label(createBomWindow, text = bomIDstr, font = ('calibre', 12))
+        
         manIDLabel = tk.Label(createBomWindow, text = "Manufacturer ID:", font=('calibre', 12))
         manIDEntry = tk.Entry(createBomWindow, width = 30)
         quantityLabel = tk.Label(createBomWindow, text = "Quantity:", font=('calibre', 12))
@@ -664,36 +717,24 @@ def createBOMGUI():
         removeItemButton = tk.Button(createBomWindow, text = "Remove Item", command = lambda:[remBomItem()])
         bomScrollbar = tk.Scrollbar(createBomWindow, orient='vertical', command = bomTree.yview)
         
-        manIDEntry.focus()
-        manIDEntry.bind('<Return>', lambda e: addBomItem())
-        quantityEntry.bind('<Return>', lambda e: addBomItem())
+        bomIDstr = "BOM # " + str(bomID.get())
+        bomIDLabel = tk.Label(createBomWindow, text = bomIDstr, font = ('calibre', 12))
+        nameLabel = tk.Label(createBomWindow, text = "Select item to create BOM for\nIf item is not present, select 'New Item' to create one", font = ('calibre', 12))
+        nameList = []
+        itemName = tk.StringVar()
+        sql = '''SELECT name FROM ssg_test_inventory ORDER BY name'''
+        cur.execute(sql)
+        records = cur.fetchall()
+        for record in records:
+            print(record[0])
+            nameList.append(record[0])
+        bomChoiceBox = ttk.Combobox(state='readonly', values = nameList, textvariable = itemName)
         
-        bomIDLabel.place(relx=.5, rely=.1, anchor='center')
-        manIDLabel.place(relx=.15, rely=.2, anchor='center')
-        manIDEntry.place(relx=.4, rely=.2, anchor = 'center')
-        quantityLabel.place(relx=.56, rely=.2, anchor='center')
-        quantityEntry.place(relx=.66, rely=.2, anchor = 'center')
-        addItemButton.place(relx=.8, rely=.2, anchor = 'center')
-        removeItemButton.place(relx=.35, rely=.9, anchor = 'center')
-        bomTree.place(relx=.5, rely=.55, anchor = 'center')
-        bomScrollbar.place(relx=.65, rely=.55, anchor = 'center')
-        completeBomButton.place(relx=.65, rely=.9, anchor = 'center')
+        bomIDLabel.place(relx=.5, rely=.05, anchor='center')
+        nameLabel.place(relx=.5, rely=.15, anchor = 'center')
+        bomChoiceBox.place(relx=.5, rely=.3, anchor='center')
         
-        bomTree.configure(yscrollcommand = bomScrollbar.set)
-        bomTree["columns"] = ("1", "2")
-        bomTree['show'] = 'headings' 
-        bomTree.column("1", width = 100, anchor = 'w')
-        bomTree.column("2", width = 100, anchor = 'w')
-        bomTree.heading("1", text = "Manufacturer ID")
-        bomTree.heading("2", text = "Quantity")
-        
-        if(version == 1):
-            tableName = "bom_" + str(bomID.get())
-            sql = '''SELECT * FROM ''' + tableName + ''';'''
-            cur.execute(sql)
-            records = cur.fetchall()
-            for record in records:
-                bomTree.insert("", 'end', values=(record[0], record[1]))
+       
 # =============================================================================
 #         sql='''SELECT * FROM ssg_test_inventory
 #                 WHERE BOM_ID = %s'''
