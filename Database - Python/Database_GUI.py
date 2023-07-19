@@ -5,11 +5,12 @@ Created on Thu Jul  6 08:32:28 2023
 @author: Luke
 """
 import sys
+#sys.path.append('C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python')
 import tkinter as tk
 from tkinter import ttk
 import Database_Globals as DG
+#from Database_Globals import invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase
 import random
-
 
 def searchGUI():
     cur = DG.conn.cursor()
@@ -827,8 +828,8 @@ def userMenu():
                 tk.messagebox.showerror("Error", "Please enter a username")
                 createUserWindow.destroy()
                 return
-            sql = '''SELECT * FROM ssg_test_users WHERE username = %s UNION 
-                    SELECT * FROM ssg_test_users WHERE usercode = %s;'''
+            sql = '''SELECT * FROM ''' + DG.userDatabase + ''' WHERE username = %s UNION 
+                    SELECT * FROM ''' + DG.userDatabase + ''' WHERE usercode = %s;'''
             cur.execute(sql, [nameEntry.get().lower(), code])
             records = cur.fetchall()
             if(records):
@@ -836,7 +837,7 @@ def userMenu():
                     print("Barcode: ", record[0], "Username: ",  record[1])
                 tk.messagebox.showerror("Duplicate User", "Please enter a unique Username")
             else:
-                sql = '''INSERT INTO ssg_test_users (username, usercode) VALUES (%s, %s);'''
+                sql = '''INSERT INTO ''' + DG.userDatabase + ''' (username, usercode) VALUES (%s, %s);'''
                 cur.execute(sql, [nameEntry.get().lower(), code])
                 createUserWindow.destroy()
                 tk.messagebox.showinfo('Success', 'User Created')
@@ -892,6 +893,19 @@ def checkOut():
     checkOutWindow.geometry("800x400")
     cur = DG.conn.cursor()
     
+    def quantityCheck(bar, quantity):
+        sql = '''SELECT quantity FROM ''' + DG.invDatabase + ''' WHERE barcode = %s'''
+        cur.execute(sql, [bar])
+        records = cur.fetchall()
+        for record in records:
+            if(quantity > record[0]):
+                tk.messagebox.showerror('Error', 'Item Quantity not available in inventory')
+                #
+                # NEED TO FINISH THIS, HAVE IT RETURN FALSE MAYBE? 
+                #
+                
+        return
+      
     def addItem():
         sql = '''SELECT * FROM ssg_test_inventory WHERE barcode = %s;'''
         cur.execute(sql, [barEntry.get()])
@@ -901,25 +915,82 @@ def checkOut():
         if(not records):
             tk.messagebox.showerror("Error", "Item not currently in system")
             return
-            
+        
+        for line in checkOutTree.get_children():
+            print("Tree:", checkOutTree.item(line).get('values')[2], type(checkOutTree.item(line).get('values')[2]), "Barcode:", barEntry.get(), type(barEntry.get()))
+            if(str(checkOutTree.item(line).get('values')[2]) == barEntry.get()):
+                errorMessage = 'Item: "' + str(checkOutTree.item(line).get('values')[1]) + '" already in list'
+                tk.messagebox.showerror("Error", errorMessage)
+                barEntry.delete(0,tk.END)
+                barEntry.focus_force()
+                return
         # If user didn't enter a quantity, just assign quantity of 1
         if(itemQuantityEntry.get() == ""):
             quantity = 1
         else:
             quantity = itemQuantityEntry.get()
         
-        print(records[0][0], records[0][1], records[0][2], records[0][3], records[0][4])
         checkOutTree.insert("", 'end', values=(records[0][0], records[0][2], barEntry.get(), quantity))     #manID, name, barcode, quantity))
         barEntry.delete(0, tk.END)
         itemQuantityEntry.delete(0, tk.END)
         barEntry.focus_force()
         return
+    
     def removeItem():
         selected = checkOutTree.selection()[0]
         checkOutTree.delete(selected)
         return
     
+    def editItem():
+        
+        selected = checkOutTree.item(checkOutTree.focus())
+        if(selected['values'] == ''):
+            tk.messagebox.showerror('Error', 'Please select an item to edit')
+            return
+        editItemWindow = tk.Tk()
+        editItemWindow.title("Edit Item")
+        editItemWindow.geometry("400x200")
+        
+        def finalizeEdit():
+#            checkOutTree.set()
+            checkOutTree.set(checkOutTree.focus(), column = '4', value = quantityEntry.get())
+            return
+        
+        returnButton = tk.Button(editItemWindow, text = 'Return', command = editItemWindow.destroy)
+        finalizeButton = tk.Button(editItemWindow, text = 'Finalize', command = lambda:[finalizeEdit(), editItemWindow.destroy()])
+        manIDLabel = tk.Label(editItemWindow, text = 'Manufacturer ID:', font = ('calibre', 12))
+        manIDLabel_fill = tk.Label(editItemWindow, text = '')
+        nameLabel = tk.Label(editItemWindow, text = 'Name:', font = ('calibre', 12))
+        nameLabel_fill = tk.Label(editItemWindow, text = '')
+        barcodeLabel = tk.Label(editItemWindow, text = 'Barcode:', font = ('calibre', 12))
+        barcodeLabel_fill = tk.Label(editItemWindow, text = '')
+        quantityLabel = tk.Label(editItemWindow, text = 'Quantity', font = ('calibre', 12))
+        quantityEntry = tk.Entry(editItemWindow, width = 5)
+        
+        manIDLabel.place(relx=.15, rely=.3, anchor='w')
+        manIDLabel_fill.place(relx=.5, rely=.3, anchor='w')
+        nameLabel.place(relx=.15, rely=.4, anchor='w')
+        nameLabel_fill.place(relx=.5, rely=.4, anchor='w')
+        barcodeLabel.place(relx=.15, rely=.5, anchor='w')
+        barcodeLabel_fill.place(relx=.5, rely=.5, anchor='w')
+        quantityLabel.place(relx=.15, rely=.6, anchor = 'w')
+        quantityEntry.place(relx=.5, rely=.6, anchor = 'w')
+        returnButton.place(relx=.85, rely=.85, anchor = 'center')
+        finalizeButton.place(relx=.65, rely=.85, anchor='center')
+
+        manIDLabel_fill.config(text = selected['values'][0])
+        nameLabel_fill.config(text = selected['values'][1])
+        barcodeLabel_fill.config(text = selected['values'][2])
+        quantityEntry.delete(0,tk.END)
+        quantityEntry.insert(0,selected['values'][3])
+        
+        editItemWindow.mainloop()
+        return
+    
     def completeOrder():
+        
+        for line in checkOutTree.get_children():
+            print(checkOutTree.item(line).get('values')[0], checkOutTree.item(line).get('values')[1], checkOutTree.item(line).get('values')[2], checkOutTree.item(line).get('values')[3])
         
         return
     
@@ -930,10 +1001,11 @@ def checkOut():
     checkOutTree = ttk.Treeview(checkOutWindow, selectmode = 'browse')
     checkOutScrollbar = tk.Scrollbar(checkOutWindow, orient='vertical', command = checkOutTree.yview)
     addItemButton = tk.Button(checkOutWindow, text = 'Add Item', command = addItem)
+    editItemButton = tk.Button(checkOutWindow, text = "Edit Item", command = editItem)
     removeItemButton = tk.Button(checkOutWindow, text = 'Remove Item', command = removeItem)
     completeOrderButton = tk.Button(checkOutWindow, text = 'Complete Order', command = completeOrder)
     homeButton = tk.Button(checkOutWindow, text = "Home", command = lambda:[checkOutWindow.destroy(), mainMenu()])
-    
+    barEntry.focus_force()
     barEntry.bind('<Return>', lambda e: itemQuantityEntry.focus_force())
     itemQuantityEntry.bind('<Return>', lambda e: addItem())
     
@@ -944,7 +1016,8 @@ def checkOut():
     checkOutScrollbar.place(relx=.775, rely=.45, anchor = 'center')
     checkOutTree.place(relx=.5, rely=.45, anchor = 'center')
     addItemButton.place(relx=.8, rely=.1, anchor = 'center')
-    removeItemButton.place(relx=.9, rely=.4, anchor = 'center')
+    editItemButton.place(relx=.9, rely=.3, anchor = 'center')
+    removeItemButton.place(relx=.9, rely=.5, anchor = 'center')
     completeOrderButton.place(relx=.65, rely=.85, anchor='center')
     homeButton.place(relx=.85, rely=.85, anchor = 'center')
     
@@ -960,6 +1033,7 @@ def checkOut():
     checkOutTree.heading("3", text = "Barcode")
     checkOutTree.heading("4", text = "Quantity")
     
+    checkOutWindow.mainloop()
     return
 
 
@@ -1082,14 +1156,15 @@ def mainMenu():
     
 
     mainMenuWindow.mainloop()
-
-if __name__ == '__main__':
-    sys.path.append('C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python')
-    DG.main()
     
+def main():
+    DG.main()
     mainMenu()
 
     DG.close()
+
+if __name__ == '__main__':
+    main()
 
     
 # Can currently add the same barcode multiple times, can NOT allow that to happen

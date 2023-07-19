@@ -6,7 +6,7 @@ Created on Wed Jun 28 12:34:34 2023
 """
 from prettytable import PrettyTable
 import psycopg2
-from config import config
+from config import config, configDBVars
 from os import system, name
 
 # Basic connection test, returns PostgreSQL DB version
@@ -38,6 +38,11 @@ def clear():
     else: 
         x = system('clear')
         
+def createGlobalVars():
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = configDBVars()
+    print(invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase)
+    return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase
+
 def roomList():
     cur = conn.cursor()
     sql = '''SELECT DISTINCT Room FROM ssg_test_locations'''
@@ -103,8 +108,14 @@ def searchByName(searchItem):
     return records
 
 def main():
-    global conn 
+    global conn
+    global invDatabase
+    global userDatabase
+    global barDatabase
+    global bomDatabase
+    global locDatabase
     conn = connect()
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = createGlobalVars()
 
 if __name__ == '__main__':
     main()
