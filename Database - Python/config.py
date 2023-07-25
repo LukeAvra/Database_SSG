@@ -6,12 +6,17 @@ Created on Mon Jun 26 09:36:29 2023
 """
 
 from configparser import ConfigParser
+import os
+
+
+absolute_path = os.path.join(os.path.dirname(__file__), "Database.ini")
+
 
 
 ###
 #  filename points to the location of the Database.ini file, change when program is being run on a different machine
-###
-def config(filename='C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database.ini', section='postgresql'):  
+### C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/
+def config(filename=absolute_path, section='postgresql'):  
     parser = ConfigParser()
     parser.read(filename)
     db = {}
@@ -22,9 +27,9 @@ def config(filename='C:/Users/Luke/Documents/Python Scripts/Database_SSG/Databas
     else:
         raise Exception('Section {0} not found in the {1} file'.format(section, filename))
         
-    return db
+    return db, params
 
-def configDBVars(filename='C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database.ini', section='database_table_names'):
+def configDBVars(filename=absolute_path, section='database_table_names'):
     parser = ConfigParser()
     parser.read(filename)
     if parser.has_section(section):

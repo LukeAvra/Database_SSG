@@ -4,9 +4,10 @@ Created on Wed Jun 28 12:34:34 2023
 
 @author: Stuck
 """
-from prettytable import PrettyTable
+#from prettytable import PrettyTable
 import psycopg2
-from config import config, configDBVars
+#from config import config, configDBVars
+import config
 from os import system, name
 
 # Basic connection test, returns PostgreSQL DB version
@@ -15,7 +16,8 @@ def connect():
     conn = None
     try:
         # read params from config file 
-        params = config()
+        params, parser = config.config()
+        print(parser[0])
         
         # Connect to the server 
         print('Connecting to the PostgreSQL database...')
@@ -39,13 +41,13 @@ def clear():
         x = system('clear')
         
 def createGlobalVars():
-    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = configDBVars()
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = config.configDBVars()
     print(invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase)
     return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase
 
 def roomList():
     cur = conn.cursor()
-    sql = '''SELECT DISTINCT Room FROM ssg_test_locations'''
+    sql = '''SELECT DISTINCT Room FROM ''' + locDatabase + ''';'''
     cur.execute(sql)
     rooms = []
     records = cur.fetchall()
@@ -56,20 +58,19 @@ def roomList():
 
 def searchID(ID):
     cur = conn.cursor()
-    sql = '''SELECT Barcode FROM ssg_test_inventory
+    sql = '''SELECT Barcode FROM ''' + invDatabase + '''
             WHERE ManufacturerID = %s'''
     cur.execute(sql, [ID])
     records = cur.fetchall()
     if(records):
         barcode = records[0][0]
         
-        sql = '''SELECT * FROM ssg_test_inventory
+        sql = '''SELECT * FROM ''' + invDatabase + '''
                WHERE ManufacturerID = %s'''
         cur.execute(sql, [ID])
         invRecords = cur.fetchall()
-    
                 
-        sql = '''SELECT * FROM ssg_test_locations
+        sql = '''SELECT * FROM ''' + locDatabase + '''
                WHERE Barcode = %s'''
         cur.execute(sql, [barcode])
         locRecords = cur.fetchall()
@@ -81,18 +82,18 @@ def searchID(ID):
 
 def searchTotal(ID, version):
     cur = conn.cursor()
-    sql = '''SELECT Barcode FROM ssg_test_inventory
+    sql = '''SELECT Barcode FROM ''' + invDatabase + '''
             WHERE %s = %s'''
     cur.execute(sql, [version, ID])
     records = cur.fetchall()
     barcode = records[0][0]
     
-    sql = '''SELECT * FROM ssg_test_inventory
+    sql = '''SELECT * FROM ''' + invDatabase + '''
            WHERE %s = %s'''
     cur.execute(sql, [version, ID])
     invRecords = cur.fetchall()
     
-    sql = '''SELECT * FROM ssg_test_locations
+    sql = '''SELECT * FROM ''' + locDatabase + '''
            WHERE Barcode = %s'''
     cur.execute(sql, [barcode])
     locRecords = cur.fetchall()
@@ -102,7 +103,7 @@ def searchTotal(ID, version):
 def searchByName(searchItem):
     cur = conn.cursor()
     userInputItem = '%' + searchItem + '%'
-    sql = '''SELECT DISTINCT Name FROM ssg_test_inventory WHERE Name ILIKE %s'''
+    sql = '''SELECT DISTINCT Name FROM ''' + invDatabase + ''' WHERE Name ILIKE %s'''
     cur.execute(sql, [userInputItem])
     records = cur.fetchall()
     return records

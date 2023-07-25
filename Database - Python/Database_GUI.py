@@ -4,40 +4,35 @@ Created on Thu Jul  6 08:32:28 2023
 
 @author: Luke
 """
+import os
 import sys
-#sys.path.append('C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python')
+print(os.path.dirname(__file__))
+sys.path.append('C:\\Users\\Luke\\Documents\\Python Scripts\\Database_SSG\\Database - Python')
 import tkinter as tk
-from tkinter import ttk
+import ttk
 import Database_Globals as DG
-#from Database_Globals import invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase
 import random
 
 def searchGUI():
     cur = DG.conn.cursor()
-    #
-    # WORK ON ME NEXT
-    #
     if(searchType.get() == 'Barcode'):
         bar = searchVar.get()
-        sql = '''SELECT * FROM barcodes WHERE code = %s'''
+        sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
         cur.execute(sql, [bar])
         records = cur.fetchall()
         if(not records):
             tk.messagebox.showerror("Error", 'Item not found')
-            return
         else:
-            sql = '''SELECT ManufacturerID FROM ssg_test_inventory WHERE Barcode = %s'''
+            sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
             cur.execute(sql, [records[0][0]])
             records = cur.fetchall()
             mainMenuWindow.destroy()
             adjustItemGUI(records[0][0])
-            return
-        
         return
         
     # Currently pulling full inventory and location records but just calling adjust item with the manufacturer ID
     elif(searchType.get() == 'Manufacturer ID'):
-        invRecords, locRecords = DG.searchID(searchVar.get())
+        invRecords, locRecords = DG.searchID(searchVar.get().lower())
         if(invRecords == None or locRecords == None):
             tk.messagebox.showerror('Search Error', "Item not found in inventory")
             return
@@ -49,7 +44,7 @@ def searchGUI():
         if(records):
             def adjustItemHelper():
                 selectedItem = invListbox.get(invListbox.curselection())
-                sql = '''SELECT ManufacturerID FROM ssg_test_inventory WHERE Name=%s;'''
+                sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Name=%s;'''
                 cur.execute(sql, [selectedItem])
                 ID_for_adjustment = cur.fetchall()
                 searchWindow.destroy()
@@ -78,6 +73,8 @@ def searchGUI():
             
             for i in range(len(records)):
                 invListbox.insert(i, records[i][0])
+                
+            searchWindow.mainloop()
         else:
             tk.messagebox.showerror("Error", "Nothing found with that name")
             
@@ -96,36 +93,56 @@ def addItemGUI():
     addItemWindow.geometry("600x150")
     addItemWindow.title("Add Item")
     
-    def newItem():
+    def newItemGUI():
         newItemWindow = tk.Tk()
         newItemWindow.geometry("600x600")
         newItemWindow.title('New Item')
-        
         cur = DG.conn.cursor()
         
         # If Else statements are to convert empty string to something that can be stored in SMALLINT
         # Could also be used to send warning when user tries to establish something without a data field
         def newItem():
-            newManID = manIDEntry.get()
-            newSupplierPartNum = SupplierPartNumEntry.get()
-            newName = NameEntry.get()
-# =============================================================================
-#             newDescription = DescriptionEntry.get()
-# =============================================================================
-            newDescription = DescriptionEntry.get('1.0', tk.END)
+            if(manIDEntry.get() == ""):
+                newManID = None
+            else:
+                newManID = manIDEntry.get().lower()
+                
+            if(manNameEntry.get() == ""):
+                newManName = None
+            else:
+                newManName = manNameEntry.get().lower()
+                
+            if(SupplierPartNumEntry.get() == ""):
+                newSupplierPartNum = None
+            else:
+                newSupplierPartNum = SupplierPartNumEntry.get()
+            
+            if(SupplierNameEntry.get() == ""):
+                newSupplierName = None
+            else:
+                newSupplierName = SupplierNameEntry.get().lower()
+            
+            #newName = NameEntry.get()
+            
+            newDescription = DescriptionEntry.get('1.0', tk.END).strip()
+            
             if(QuantityEntry.get() == ""):
                 newQuantity = None
             else:
                 newQuantity = QuantityEntry.get()
+                
             newBarcode = BarcodeEntry.get()
-            if(len(newBarcode) > 12):
+            if(len(newBarcode) != 12):
                 tk.messagebox.showerror('Error', 'Please Enter a valid 12 digit barcode')
                 return
-            if(bomIDEntry.get() == ""):
-                newBomID = None
-            else:   
-                newBomID = bomIDEntry.get()
-            newRoom = roomEntry.get()
+
+            newBomID = None
+            
+            if(roomEntry.get() == ""):
+                newRoom = None
+            else:
+                newRoom = roomEntry.get()
+            
             if(rackEntry.get() == ""):
                 newRack = None
             else:
@@ -142,13 +159,13 @@ def addItemGUI():
                 newShelfLocation = shelfLocationEntry.get()
                 
             # Check if Barcode is already in system, do extraneous checks, adding items doesn't have to be blazing fast
-            sql = '''SELECT * FROM barcodes WHERE code = %s'''
+            sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
             cur.execute(sql, [newBarcode])
             barRecords = cur.fetchall()
-            sql = '''SELECT * FROM ssg_test_inventory WHERE Barcode = %s'''
+            sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
             cur.execute(sql, [newBarcode])
             invBarRecords = cur.fetchall()
-            sql = '''SELECT * FROM ssg_test_locations WHERE Barcode = %s'''
+            sql = '''SELECT * FROM ''' + DG.locDatabase + ''' WHERE Barcode = %s'''
             cur.execute(sql, [newBarcode])
             locBarRecords = cur.fetchall()
             if(barRecords or locBarRecords or invBarRecords):
@@ -156,7 +173,7 @@ def addItemGUI():
                 return
             
             # Check if Manufacturer ID is already in system
-            sql = '''SELECT * FROM ssg_test_inventory WHERE ManufacturerID = %s'''
+            sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
             cur.execute(sql, [newManID])
             manIDRecords = cur.fetchall()
             if(manIDRecords):
@@ -164,49 +181,47 @@ def addItemGUI():
                 return
             
             
-            sql='''INSERT INTO ssg_test_inventory (ManufacturerID, SupplierPartNum, Name, Description, Quantity, Barcode, BOM_ID)
-                     VALUES (%s, %s, %s, %s, %s, %s, %s);
+            sql='''INSERT INTO ''' + DG.invDatabase + ''' (ManufacturerID, Manufacturer, SupplierPartNum, Supplier, Description, Quantity, Barcode, BOM_ID)
+                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                  END'''
-            cur.execute(sql, [newManID, newSupplierPartNum, newName, newDescription, newQuantity, newBarcode, newBomID])
+            cur.execute(sql, [newManID, newManName, newSupplierPartNum, newSupplierName, newDescription, newQuantity, newBarcode, newBomID])
             
-            sql = '''INSERT INTO ssg_test_locations (Room, Rack, Shelf, Shelf_Location, Barcode)
+            sql = '''INSERT INTO ''' + DG.locDatabase + ''' (Room, Rack, Shelf, Shelf_Location, Barcode)
                         VALUES (%s, %s, %s, %s, %s);
                     END'''
             cur.execute(sql, [newRoom, newRack, newShelf, newShelfLocation, newBarcode])
             
-            sql = '''INSERT INTO barcodes (code) VALUES (%s); END'''
+            sql = '''INSERT INTO ''' + DG.barDatabase + ''' (code) VALUES (%s); END'''
             cur.execute(sql, [newBarcode])        
             
             print('Item should have been added')
             newItemWindow.destroy()
             addItemGUI()
-            
-            
-            
-        
+
         # variables for adding items
         manID = tk.StringVar()
+        manName = tk.StringVar()
         SupplierPartNum = tk.StringVar()
-        Name = tk.StringVar()
-# =============================================================================
-#         Description = tk.StringVar()
-# =============================================================================
+        supplierName = tk.StringVar()
+        #Name = tk.StringVar()
         Quantity = tk.StringVar()
         Barcode = tk.StringVar()
-        bomID = tk.StringVar()
         room = tk.StringVar()
         rack = tk.StringVar()
         shelf = tk.StringVar()
         shelfLocation = tk.StringVar()
         
         # Labels 
-        manIDLabel = tk.Label(newItemWindow, text = 'Manufacturer ID: ', font=('calibre', 12))
+        manIDLabel = tk.Label(newItemWindow, text = 'Manufacturer Number: ', font=('calibre', 12))
+        manNameLabel = tk.Label(newItemWindow, text = 'Manufacturer: ', font=('calibre', 12))
         SupplierPartNumLabel = tk.Label(newItemWindow, text = 'Supplier Part Number: ', font=('calibre', 12))
-        NameLabel = tk.Label(newItemWindow, text = 'Name: ', font=('calibre', 12))
-        DescriptionLabel = tk.Label(newItemWindow, text = 'Description: (100 Chars)', font=('calibre', 12))
+        SupplierNameLabel = tk.Label(newItemWindow, text = 'Supplier Name: ', font=('calibre', 12))
+        
+        
+        #NameLabel = tk.Label(newItemWindow, text = 'Name: ', font=('calibre', 12))
+        DescriptionLabel = tk.Label(newItemWindow, text = 'Description: (100 Chars max)', font=('calibre', 12))
         QuantityLabel = tk.Label(newItemWindow, text = 'Quantity: ', font=('calibre', 12))
         BarcodeLabel = tk.Label(newItemWindow, text = 'Barcode: ', font=('calibre', 12))
-        bomIDLabel = tk.Label(newItemWindow, text = 'BOM ID: ', font=('calibre', 12))
         roomLabel = tk.Label(newItemWindow, text = 'Room: ', font=('calibre', 12))
         rackLabel = tk.Label(newItemWindow, text = 'Rack: ', font=('calibre', 12))
         shelfLabel = tk.Label(newItemWindow, text = 'Shelf: ', font=('calibre', 12))
@@ -214,89 +229,89 @@ def addItemGUI():
         
         # Entry Fields
         manIDEntry = tk.Entry(newItemWindow, textvariable = manID, font=('calibre', 12))
+        manNameEntry = tk.Entry(newItemWindow, textvariable = manName, font=('calibre', 12))
         SupplierPartNumEntry = tk.Entry(newItemWindow, textvariable = SupplierPartNum, font=('calibre', 12))
-        NameEntry = tk.Entry(newItemWindow, textvariable = Name, font=('calibre', 12))
+        SupplierNameEntry = tk.Entry(newItemWindow, textvariable = supplierName, font=('calibre', 12))
         
-# =============================================================================
-#         DescriptionEntry = tk.Entry(newItemWindow, textvariable = Description, font=('calibre', 12))
-# =============================================================================
+        #NameEntry = tk.Entry(newItemWindow, textvariable = Name, font=('calibre', 12))    
         DescriptionEntry = tk.Text(newItemWindow, font = ('calibre', 12), width = 20, height = 3)
-        
         QuantityEntry = tk.Entry(newItemWindow, textvariable = Quantity, font=('calibre', 12))
         BarcodeEntry = tk.Entry(newItemWindow, textvariable = Barcode, font=('calibre', 12))
-        bomIDEntry = tk.Entry(newItemWindow, textvariable = bomID, font=('calibre', 12))
         roomEntry = tk.Entry(newItemWindow, textvariable = room, font=('calibre', 12))
         rackEntry = tk.Entry(newItemWindow, textvariable = rack, font=('calibre', 12))
         shelfEntry = tk.Entry(newItemWindow, textvariable = shelf, font=('calibre', 12))
         shelfLocationEntry = tk.Entry(newItemWindow, textvariable = shelfLocation, font=('calibre', 12))
-        
-        
+               
         manIDLabel.place(relx=.05, rely=.1, anchor='w')
-        manIDEntry.place(relx=.55, rely=.1, anchor='center')
+        manIDEntry.place(relx=.6, rely=.1, anchor='center')
         
-        SupplierPartNumLabel.place(relx=.05, rely=.15, anchor='w')
-        SupplierPartNumEntry.place(relx=.55, rely=.15, anchor='center')
+        manNameLabel.place(relx=.05, rely=.15, anchor='w')
+        manNameEntry.place(relx=.6, rely=.15, anchor='center')
         
-        NameLabel.place(relx=.05, rely=.2, anchor='w')
-        NameEntry.place(relx=.55, rely=.2, anchor='center')
+        SupplierPartNumLabel.place(relx=.05, rely=.2, anchor='w')
+        SupplierPartNumEntry.place(relx=.6, rely=.2, anchor='center')
         
-        DescriptionLabel.place(relx=.05, rely=.275, anchor='w')
-        DescriptionEntry.place(relx=.55, rely=.3, anchor='center')
+        SupplierNameLabel.place(relx=.05, rely=.25, anchor='w')
+        SupplierNameEntry.place(relx=.6, rely=.25, anchor='center')
         
-        QuantityLabel.place(relx=.05, rely=.4, anchor='w')
-        QuantityEntry.place(relx=.55, rely=.4, anchor='center')
+        #NameLabel.place(relx=.05, rely=.2, anchor='w')
+        #NameEntry.place(relx=.55, rely=.2, anchor='center')
         
-        BarcodeLabel.place(relx=.05, rely=.45, anchor='w')
-        BarcodeEntry.place(relx=.55, rely=.45, anchor='center')
+        DescriptionLabel.place(relx=.05, rely=.325, anchor='w')
+        DescriptionEntry.place(relx=.6, rely=.35, anchor='center')
         
-        bomIDLabel.place(relx=.05, rely=.5, anchor='w')
-        bomIDEntry.place(relx=.55, rely=.5, anchor='center')
+        QuantityLabel.place(relx=.05, rely=.45, anchor='w')
+        QuantityEntry.place(relx=.6, rely=.45, anchor='center')
+        
+        BarcodeLabel.place(relx=.05, rely=.5, anchor='w')
+        BarcodeEntry.place(relx=.6, rely=.5, anchor='center')
         
         roomLabel.place(relx=.05, rely=.55, anchor='w')
-        roomEntry.place(relx=.55, rely=.55, anchor='center')
+        roomEntry.place(relx=.6, rely=.55, anchor='center')
         
         rackLabel.place(relx=.05, rely=.6, anchor='w')
-        rackEntry.place(relx=.55, rely=.6, anchor='center')
+        rackEntry.place(relx=.6, rely=.6, anchor='center')
         
         shelfLabel.place(relx=.05, rely=.65, anchor='w')
-        shelfEntry.place(relx=.55, rely=.65, anchor='center')
+        shelfEntry.place(relx=.6, rely=.65, anchor='center')
         
         shelfLocationLabel.place(relx=.05, rely=.7, anchor='w')
-        shelfLocationEntry.place(relx=.55, rely=.7, anchor='center')
+        shelfLocationEntry.place(relx=.6, rely=.7, anchor='center')
         
         if(item_to_add_manID.get() != ""):
-            manIDEntry.insert(0, item_to_add_manID.get())
+            manIDEntry.insert(0, item_to_add_manID.get().lower())
+            manNameEntry.focus_force()
+        else:
+            manIDEntry.focus_force()
         
         createButton = tk.Button(newItemWindow, text = 'Add', command = newItem)
         createButton.place(relx=.5, rely = .775, anchor='center')
         
-        returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), addItemGUI()])
+        returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), mainMenu()])
         returnButton.place(relx=.85, rely=.85, anchor='center')
         
         barcodeGeneratorButton = tk.Button(newItemWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel)])
-        barcodeGeneratorButton.place(relx=.6, rely=.9, anchor='center')
+        barcodeGeneratorButton.place(relx=.5, rely=.92, anchor='center')
         barcodeEntry = tk.Entry(newItemWindow, font=('calibre', 12))
         barcodeEntry.place(relx=.5, rely=.85, anchor = 'center')
         checkDigitLabel = tk.Label(newItemWindow, text = '', font=('calibre', 12))
         checkDigitLabel.place(relx=.7, rely=.85, anchor = 'center')
         
-
         newItemWindow.mainloop()
-        
         return
     
     def dataCheck():
         cur = DG.conn.cursor()
-        sql = '''SELECT * FROM ssg_test_inventory
+        sql = '''SELECT * FROM ''' + DG.invDatabase + '''
                  WHERE ManufacturerID = %s'''
-        cur.execute(sql, [item_to_add_manID.get()])
+        cur.execute(sql, [item_to_add_manID.get().lower()])
         records = cur.fetchall()
         if records:
             addItemWindow.destroy()
-            adjustItemGUI(item_to_add_manID.get())
+            adjustItemGUI(item_to_add_manID.get().lower())
         else:
             addItemWindow.destroy()
-            newItem()
+            newItemGUI()
             return
         return
     
@@ -308,19 +323,19 @@ def addItemGUI():
     addItemManufacturerButton = tk.Button(addItemWindow, text = 'Add Item', command = dataCheck)
     returnButton = tk.Button(addItemWindow, text = 'Home', command = lambda: [addItemWindow.destroy(), mainMenu()])
     addItemManufacturerEntry.bind('<Return>', lambda e: dataCheck())
+    addItemManufacturerEntry.focus_force()
 
     addItemManufacturerLabel.place(relx=.116, rely=.4, anchor='center')
     addItemManufacturerEntry.place(relx=.4, rely=.4, anchor='center')
     addItemManufacturerButton.place(relx=.7, rely=.4, anchor='center')
     returnButton.place(relx=.85, rely=.85, anchor = 'center')
     
-    addItemWindow.mainloop()
-    
+    addItemWindow.mainloop() 
     return    
 
 def adjustItemGUI(item_for_adjustment):
     cur = DG.conn.cursor()
-    sql = '''SELECT Barcode FROM ssg_test_inventory
+    sql = '''SELECT Barcode FROM ''' + DG.invDatabase + '''
             WHERE ManufacturerID = %s'''
     cur.execute(sql, [item_for_adjustment])
     records = cur.fetchall()
@@ -332,10 +347,12 @@ def adjustItemGUI(item_for_adjustment):
     adjustItemWindow.title('Adjust Item')
     
     def adjustItem():
-        adjustedManID = manIDEntry.get()
+        adjustedManID = manIDEntry.get().lower()
+        adjustedManName = manNameEntry.get().lower()
         adjustedSupplierPartNum = SupplierPartNumEntry.get()
-        adjustedName = NameEntry.get()
-        adjustedDescription = DescriptionEntry.get('1.0', tk.END)
+        adjustedSupplierName = supplierNameEntry.get()
+        #adjustedName = NameEntry.get()
+        adjustedDescription = DescriptionEntry.get('1.0', tk.END).strip()
         
         if(QuantityEntry.get() == ""):
             adjustedQuantity = None
@@ -343,14 +360,18 @@ def adjustItemGUI(item_for_adjustment):
             adjustedQuantity = QuantityEntry.get()
             
         adjustedBarcode = BarcodeEntry.get()
-        if(len(adjustedBarcode) < 12):
+        if(len(adjustedBarcode) != 12):
             tk.messagebox.showerror("Error", "Barcodes must be 12 characters long")
             return
         
-        if(bomIDEntry.get() == ""):
-            adjustedbomID = None
-        else:
-            adjustedbomID = bomIDEntry.get()
+        # Removing BOM entry from adjust and add items
+        
+# =============================================================================
+#         if(bomIDEntry.get() == ""):
+#             adjustedbomID = None
+#         else:
+#             adjustedbomID = bomIDEntry.get()
+# =============================================================================
             
         adjustedroom = roomEntry.get()
         if(rackEntry.get() == ""):
@@ -374,22 +395,22 @@ def adjustItemGUI(item_for_adjustment):
         # This is directly copied from the newItem function, may be edge cases where this is too strict
         # I'm just going to wait until someone complains or I notice an issue before adjusting it though
         #
-        sql = '''SELECT * FROM barcodes WHERE code = %s'''
+        sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
         cur.execute(sql, [adjustedBarcode])
         barRecords = cur.fetchall()
-        sql = '''SELECT * FROM ssg_test_inventory WHERE Barcode = %s'''
+        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
         cur.execute(sql, [adjustedBarcode])
         invBarRecords = cur.fetchall()
-        sql = '''SELECT * FROM ssg_test_locations WHERE Barcode = %s'''
+        sql = '''SELECT * FROM ''' + DG.locDatabase + ''' WHERE Barcode = %s'''
         cur.execute(sql, [adjustedBarcode]) 
         locBarRecords = cur.fetchall()
-        if(barRecords[0][0] != invRecords[0][5] and barRecords):
+        if(barRecords and barRecords[0][0] != invRecords[0][6]):
             if(locBarRecords or invBarRecords):
                 tk.messagebox.showerror('Error', 'Barcode has already been found in our system')
                 return
         
         # Check if Manufacturer ID is already in system
-        sql = '''SELECT * FROM ssg_test_inventory WHERE ManufacturerID = %s'''
+        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
         cur.execute(sql, [adjustedManID])
         manIDRecords = cur.fetchall()
         
@@ -398,20 +419,19 @@ def adjustItemGUI(item_for_adjustment):
             tk.messagebox.showerror('Error', 'Manufacturer ID has already been found in our system')
             return
         
-        sql = '''UPDATE ssg_test_inventory
-                 SET ManufacturerID = %s, 
+        sql = '''UPDATE ''' + DG.invDatabase + '''
+                 SET ManufacturerID = %s,
+                     Manufacturer = %s,
                      SupplierPartNum = %s, 
-                     Name = %s, 
+                     Supplier = %s, 
                      Description = %s, 
                      Quantity = %s, 
-                     Barcode = %s, 
-                     BOM_ID = %s
+                     Barcode = %s
                  WHERE Barcode = %s;
                  END'''
-
-        cur.execute(sql, [adjustedManID, adjustedSupplierPartNum, adjustedName, adjustedDescription, adjustedQuantity, adjustedBarcode, adjustedbomID, barcode_for_adjustment])
+        cur.execute(sql, [adjustedManID, adjustedManName, adjustedSupplierPartNum, adjustedSupplierName, adjustedDescription, adjustedQuantity, adjustedBarcode, barcode_for_adjustment])
         
-        sql = '''UPDATE ssg_test_locations
+        sql = '''UPDATE ''' + DG.locDatabase + '''
                  SET Room = %s,
                      Rack = %s,
                      Shelf = %s,
@@ -421,19 +441,23 @@ def adjustItemGUI(item_for_adjustment):
                  END'''
         cur.execute(sql, [adjustedroom, adjustedrack, adjustedshelf, adjustedshelfLocation, adjustedBarcode, barcode_for_adjustment])
         
-        sql = '''SELECT * FROM barcodes WHERE code = %s'''
+        sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
         cur.execute(sql, [barcode_for_adjustment])
         records = cur.fetchall()
         if(records):
-            sql='''UPDATE barcodes
+            sql='''UPDATE ''' + DG.barDatabase + '''
                     SET code = %s
                     WHERE code = %s;
                     END'''
             cur.execute(sql, [adjustedBarcode, barcode_for_adjustment])
         else:
-            sql = '''INSERT INTO barcodes (code) VALUES (%s)'''
+            sql = '''INSERT INTO ''' + DG.barDatabase + ''' (code) VALUES (%s)'''
             cur.execute(sql, [adjustedBarcode])
         
+        
+        # Careful here, there's no check for this, it just shows up if nothing crashed the program thus far.
+        # Maybe establish a try/catch for the above three SQL statements? If no failures, display the box
+        tk.messagebox.showinfo("Success", 'Item Updated')
         adjustItemWindow.destroy()
         mainMenu()
     
@@ -450,73 +474,107 @@ def adjustItemGUI(item_for_adjustment):
 # =============================================================================
             
     manID = tk.StringVar()
-    SupplierPartNum = tk.StringVar()
-    Name = tk.StringVar()
+    manName = tk.StringVar()
+    supplierPartNum = tk.StringVar()
+    supplierName = tk.StringVar()
+    #Name = tk.StringVar()
     Quantity = tk.StringVar()
     Barcode = tk.StringVar()
-    bomID = tk.StringVar()
+    #bomID = tk.StringVar()
     room = tk.StringVar()
     rack = tk.StringVar()
     shelf = tk.StringVar()
     shelfLocation = tk.StringVar()
     
-    manIDLabel = tk.Label(adjustItemWindow, text = 'Manufacturer ID: ', font=('calibre', 12))
+    manIDLabel = tk.Label(adjustItemWindow, text = 'Manufacturer Part #: ', font=('calibre', 12))
+    manNameLabel = tk.Label(adjustItemWindow, text = 'Manufacturer: ', font=('calibre', 12))
     SupplierPartNumLabel = tk.Label(adjustItemWindow, text = 'Supplier Part Number: ', font=('calibre', 12))
-    NameLabel = tk.Label(adjustItemWindow, text = 'Name: ', font=('calibre', 12))
+    supplierNameLabel = tk.Label(adjustItemWindow, text = 'Supplier: ', font=('calibre', 12))
+    #NameLabel = tk.Label(adjustItemWindow, text = 'Name: ', font=('calibre', 12))
     DescriptionLabel = tk.Label(adjustItemWindow, text = 'Description: ', font=('calibre', 12))
     QuantityLabel = tk.Label(adjustItemWindow, text = 'Quantity: ', font=('calibre', 12))
     BarcodeLabel = tk.Label(adjustItemWindow, text = 'Barcode: ', font=('calibre', 12))
-    bomIDLabel = tk.Label(adjustItemWindow, text = 'BOM ID: ', font=('calibre', 12))
+    #bomIDLabel = tk.Label(adjustItemWindow, text = 'BOM ID: ', font=('calibre', 12))
     roomLabel = tk.Label(adjustItemWindow, text = 'Room: ', font=('calibre', 12))
     rackLabel = tk.Label(adjustItemWindow, text = 'Rack: ', font=('calibre', 12))
     shelfLabel = tk.Label(adjustItemWindow, text = 'Shelf: ', font=('calibre', 12))
     shelfLocationLabel = tk.Label(adjustItemWindow, text = 'Shelf Location: ', font=('calibre', 12))
     
     manIDEntry = tk.Entry(adjustItemWindow, textvariable = manID, font=('calibre', 12))
-    SupplierPartNumEntry = tk.Entry(adjustItemWindow, textvariable = SupplierPartNum, font=('calibre', 12))
-    NameEntry = tk.Entry(adjustItemWindow, textvariable = Name, font=('calibre', 12))
+    manNameEntry = tk.Entry(adjustItemWindow, textvariable = manName, font=('calibre', 12))
+    SupplierPartNumEntry = tk.Entry(adjustItemWindow, textvariable = supplierPartNum, font=('calibre', 12))
+    supplierNameEntry = tk.Entry(adjustItemWindow, textvariable = supplierName, font=('calibre', 12))
+    #NameEntry = tk.Entry(adjustItemWindow, textvariable = Name, font=('calibre', 12))
     DescriptionEntry = tk.Text(adjustItemWindow, font = ('calibre', 12), width = 20, height = 3)
     QuantityEntry = tk.Entry(adjustItemWindow, textvariable = Quantity, font=('calibre', 12))
     BarcodeEntry = tk.Entry(adjustItemWindow, textvariable = Barcode, font=('calibre', 12))
-    bomIDEntry = tk.Entry(adjustItemWindow, textvariable = bomID, font=('calibre', 12))
+    #bomIDEntry = tk.Entry(adjustItemWindow, textvariable = bomID, font=('calibre', 12))
     roomEntry = tk.Entry(adjustItemWindow, textvariable = room, font=('calibre', 12))
     rackEntry = tk.Entry(adjustItemWindow, textvariable = rack, font=('calibre', 12))
     shelfEntry = tk.Entry(adjustItemWindow, textvariable = shelf, font=('calibre', 12))
     shelfLocationEntry = tk.Entry(adjustItemWindow, textvariable = shelfLocation, font=('calibre', 12))
 
-    manIDEntry.insert(0, invRecords[0][0])
-    SupplierPartNumEntry.insert(0, invRecords[0][1])
-    NameEntry.insert(0,invRecords[0][2])
-    DescriptionEntry.insert('end', invRecords[0][3])
-    QuantityEntry.insert(0, invRecords[0][4])
-    BarcodeEntry.insert(0, invRecords[0][5])
-    if(invRecords[0][6] != None):
-        bomIDEntry.insert(0, invRecords[0][6])
-    roomEntry.insert(0, locRecords[0][0])
-    rackEntry.insert(0, locRecords[0][1])
-    shelfEntry.insert(0, locRecords[0][2])
-    shelfLocationEntry.insert(0, locRecords[0][3])
+    if(invRecords[0][0]):
+        manIDEntry.insert(0, invRecords[0][0])
+    if(invRecords[0][1]):
+        manNameEntry.insert(0, invRecords[0][1])
+    if(invRecords[0][2]):
+        SupplierPartNumEntry.insert(0, invRecords[0][2])
+    if(invRecords[0][3]):
+        supplierNameEntry.insert(0, invRecords[0][3])
+# =============================================================================
+#     if(invRecords[0][4]):
+#         NameEntry.insert(0,invRecords[0][4])
+# =============================================================================
+    if(invRecords[0][4]):
+        DescriptionEntry.insert('end', invRecords[0][4])
+    if(invRecords[0][5]):
+        QuantityEntry.insert(0, invRecords[0][5])
+    if(invRecords[0][6]):
+        BarcodeEntry.insert(0, invRecords[0][6])
+# =============================================================================
+#     if(invRecords[0][6] != None):
+#         bomIDEntry.insert(0, invRecords[0][6])
+# =============================================================================
+    if(locRecords[0][0]):
+        roomEntry.insert(0, locRecords[0][0])
+    if(locRecords[0][1]):
+        rackEntry.insert(0, locRecords[0][1])
+    if(locRecords[0][2]):
+        shelfEntry.insert(0, locRecords[0][2])
+    if(locRecords[0][3]):
+        shelfLocationEntry.insert(0, locRecords[0][3])
 
     manIDLabel.place(relx=.05, rely=.1, anchor='w')
     manIDEntry.place(relx=.55, rely=.1, anchor='center')
     
-    SupplierPartNumLabel.place(relx=.05, rely=.15, anchor='w')
-    SupplierPartNumEntry.place(relx=.55, rely=.15, anchor='center')
+    manNameLabel.place(relx=.05, rely=.15, anchor='w')
+    manNameEntry.place(relx=.55, rely=.15, anchor='center')
     
-    NameLabel.place(relx=.05, rely=.2, anchor='w')
-    NameEntry.place(relx=.55, rely=.2, anchor='center')
+    SupplierPartNumLabel.place(relx=.05, rely=.2, anchor='w')
+    SupplierPartNumEntry.place(relx=.55, rely=.2, anchor='center')
     
-    DescriptionLabel.place(relx=.05, rely=.275, anchor='w')
-    DescriptionEntry.place(relx=.55, rely=.3, anchor='center')
+    supplierNameLabel.place(relx=.05, rely=.25, anchor='w')
+    supplierNameEntry.place(relx=.55, rely=.25, anchor='center')
     
-    QuantityLabel.place(relx=.05, rely=.4, anchor='w')
-    QuantityEntry.place(relx=.55, rely=.4, anchor='center')
+# =============================================================================
+#     NameLabel.place(relx=.05, rely=.2, anchor='w')
+#     NameEntry.place(relx=.55, rely=.2, anchor='center')
+# =============================================================================
     
-    BarcodeLabel.place(relx=.05, rely=.45, anchor='w')
-    BarcodeEntry.place(relx=.55, rely=.45, anchor='center')
+    DescriptionLabel.place(relx=.05, rely=.325, anchor='w')
+    DescriptionEntry.place(relx=.55, rely=.35, anchor='center')
     
-    bomIDLabel.place(relx=.05, rely=.5, anchor='w')
-    bomIDEntry.place(relx=.55, rely=.5, anchor='center')
+    QuantityLabel.place(relx=.05, rely=.45, anchor='w')
+    QuantityEntry.place(relx=.55, rely=.45, anchor='center')
+    
+    BarcodeLabel.place(relx=.05, rely=.5, anchor='w')
+    BarcodeEntry.place(relx=.55, rely=.5, anchor='center')
+    
+# =============================================================================
+#     bomIDLabel.place(relx=.05, rely=.5, anchor='w')
+#     bomIDEntry.place(relx=.55, rely=.5, anchor='center')
+# =============================================================================
     
     roomLabel.place(relx=.05, rely=.55, anchor='w')
     roomEntry.place(relx=.55, rely=.55, anchor='center')
@@ -531,11 +589,12 @@ def adjustItemGUI(item_for_adjustment):
     shelfLocationEntry.place(relx=.55, rely=.7, anchor='center')
     
     adjustButton = tk.Button(adjustItemWindow, text = 'Adjust', command = adjustItem)
-    adjustButton.place(relx=.5, rely = .8, anchor='center')
+    adjustButton.place(relx=.5, rely = .85, anchor='center')
     
     returnButton = tk.Button(adjustItemWindow, text = 'Home', command = lambda: [adjustItemWindow.destroy(), mainMenu()])
-    returnButton.place(relx=.85, rely=.85, anchor='center')
+    returnButton.place(relx=.85, rely=.9, anchor='center')
 
+    adjustItemWindow.mainloop()
     return
 
 def removeItem():
@@ -547,18 +606,20 @@ def removeItem():
     
     def itemRemoval(item_to_remove):
         cur = DG.conn.cursor()
-        sql = '''SELECT * FROM ssg_test_inventory WHERE ManufacturerID = %s'''
+        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
         cur.execute(sql, [item_to_remove])
         records = cur.fetchall()
         if(records):
-            sql = '''DELETE FROM ssg_test_inventory WHERE ManufacturerID = %s'''
+            sql = '''DELETE FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
             cur.execute(sql, [item_to_remove])
-            sql = '''DELETE FROM ssg_test_locations WHERE Barcode = %s'''
-            cur.execute(sql, [records[0][5]])
-            sql = '''DELETE FROM barcodes WHERE code = %s'''
-            cur.execute(sql, [records[0][5]])
+            sql = '''DELETE FROM ''' + DG.locDatabase + ''' WHERE Barcode = %s'''
+            cur.execute(sql, [records[0][6]])
+            sql = '''DELETE FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
+            cur.execute(sql, [records[0][6]])
             
-            print("Item:", item_to_remove, 'deleted')
+            message = "Item:", item_to_remove, 'deleted'
+            tk.messagebox.showinfo("Success", message)
+            removeItemEntry.delete(0, tk.END)
         else:
             tk.messagebox.showerror('Error', 'Item not found in inventory')
                 
@@ -567,39 +628,49 @@ def removeItem():
         removeCheckWindow = tk.Tk()
         removeCheckWindow.geometry("400x200")
         removeCheckWindow.title("Are you sure?")
+        removeCheckWindow.focus_force()
         
-        removeText = "Are you sure you want to remove item: " + removeVar.get()
+        removeText = "Are you sure you want to remove item: " + removeVar.get().lower()
         removeLabel = tk.Label(removeCheckWindow, text = removeText, font = ('calibre', 12))
-        yesButton = tk.Button(removeCheckWindow, text = "Yes", command = lambda: [itemRemoval(removeVar.get()), removeCheckWindow.destroy()])
+        yesButton = tk.Button(removeCheckWindow, text = "Yes", command = lambda: [itemRemoval(removeVar.get().lower()), removeCheckWindow.destroy()])
         noButton = tk.Button(removeCheckWindow, text = "No", command = removeCheckWindow.destroy)
+        removeItemEntry.unbind('<Return>')
+        removeCheckWindow.bind('<Return>', lambda event:[itemRemoval(removeVar.get()), removeCheckWindow.destroy(), removeItemEntry.bind('<Return>', lambda e: removeCheck())])
         
         removeLabel.place(relx=.5, rely=.3, anchor='center')
         yesButton.place(relx=.2, rely=.6, anchor = 'center')
         noButton.place(relx=.8, rely=.6, anchor='center')   
         
+        removeCheckWindow.mainloop()
         return
     
     removeItemLabel = tk.Label(removeItemWindow, text = "Manufacturer ID:", font=('calibre', 12))
-    removeItemEntry = tk.Entry(removeItemWindow, textvariable = removeVar, font=('calibre', 12))  
+    removeItemEntry = tk.Entry(removeItemWindow, textvariable = removeVar, font=('calibre', 12))
+    
     removeItemButton = tk.Button(removeItemWindow, text = 'Remove', command = removeCheck)
+    removeItemEntry.bind('<Return>', lambda e: removeCheck())
+    
     homeButton = tk.Button(removeItemWindow, text = 'Home', command = lambda: [removeItemWindow.destroy(), mainMenu()])
     
     removeItemLabel.place(relx=.15, rely=.4, anchor='center')
     removeItemEntry.place(relx=.4, rely=.4, anchor='center')
     removeItemButton.place(relx=.7, rely=.4, anchor='center')
     homeButton.place(relx=.85, rely=.85, anchor='center')
-
+    
+    removeItemEntry.focus_force()
+    removeItemWindow.mainloop()
+    
     return
 
 def createBOMGUI():
     bomWindow = tk.Tk()
-    bomWindow.geometry("400x200")
+    bomWindow.geometry("600x200")
     bomWindow.title("Bill of Materials")
     cur = DG.conn.cursor()
     
     def createBOMID():
         bomID = random.randrange(0, 10000)
-        sql = '''SELECT * FROM ssg_test_boms WHERE bom_id = %s'''
+        sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_id = %s'''
         cur.execute(sql, [bomID])
         records = cur.fetchall()
         if(records):
@@ -618,8 +689,8 @@ def createBOMGUI():
         
 
         def addBomItem():
-            inv, loc = DG.searchID(manIDEntry.get())
-            sql = '''SELECT manufacturerid FROM ssg_test_inventory WHERE bom_id = %s'''
+            inv, loc = DG.searchID(manIDEntry.get().lower())
+            sql = '''SELECT manufacturerid FROM ''' + DG.invDatabase + ''' WHERE bom_id = %s'''
             cur.execute(sql, [bomID])
             selfID = cur.fetchall()
             if(selfID):
@@ -635,10 +706,10 @@ def createBOMGUI():
                 tk.messagebox.showerror("Error", "Manufacturer ID not found")
             elif(quant < 1):
                 tk.messagebox.showerror("Error", "Please enter a quantity greater than zero")
-            elif(manIDEntry.get() == selfID):
+            elif(manIDEntry.get().lower() == selfID):
                 tk.messagebox.showerror("Error", "Cannot add item to it's own BOM")
             else:
-                bomTree.insert("", 'end', values=(manIDEntry.get(), quant))
+                bomTree.insert("", 'end', values=(manIDEntry.get().lower(), quant))
             manIDEntry.delete(0, tk.END)
             quantityEntry.delete(0, tk.END)
             manIDEntry.focus_force()
@@ -663,9 +734,9 @@ def createBOMGUI():
                 cur.execute(sql)
             else:
                 # INSERTING BOM_ID# and BOM_NAME INTO BOM TABLE OF TABLES
-                sql = '''INSERT INTO ssg_test_boms (bom_id, bom_name) VALUES (%s, %s);'''
+                sql = '''INSERT INTO ''' + DG.bomDatabase + ''' (bom_id, bom_name) VALUES (%s, %s);'''
                 cur.execute(sql, [bomID, itemName.get()])
-                sql = '''UPDATE ssg_test_inventory SET bom_id = %s WHERE name = %s'''
+                sql = '''UPDATE ''' + DG.invDatabase + ''' SET bom_id = %s WHERE name = %s'''
                 cur.execute(sql, [bomID, itemName.get()])
             # INSERTING ALL MANUFACTURER IDS AND QUANTITIES
             for line in bomTree.get_children():
@@ -721,7 +792,7 @@ def createBOMGUI():
         # USE FOR EDITING BOM
         # FILLS TREE WITH INFORMATION ALREADY IN DATABASE
             
-        sql = '''SELECT * FROM ssg_test_boms WHERE bom_name = %s'''
+        sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_name = %s'''
         cur.execute(sql, [itemName.get()])
         records = cur.fetchall()
         edit = 0
@@ -741,18 +812,36 @@ def createBOMGUI():
         createBomWindow.mainloop()
         return
     
+    # useList and nonUseList are what is and isn't used in the inventory to make a particular bom
     def checkInventoryHelper():
-        sql = '''SELECT bom_id FROM ssg_test_boms WHERE bom_name = %s;'''
-        cur.execute(sql, [itemName.get()])
-        records = cur.fetchall()
-        if(records):
-            bomIDNum = records[0][0]
-            checkInventory(bomIDNum)
-        else:
-            tk.messagebox.showerror("Error", 'No BOM on record to check inventory')
+        useList, nonUseList = set([]), set([])
+        bomString = bomEntryBox.get()
+        bomList = [i.strip() for i in bomString.split(",")]
+        for bom in bomList:
+            sql = '''SELECT bom_id FROM ''' + DG.bomDatabase + ''' WHERE bom_name = %s;'''
+            cur.execute(sql, [bom])
+            records = cur.fetchall()
+            if(records):
+                bomIDNum = records[0][0]
+                checkInventory(bomIDNum, useList, nonUseList)
+                sql = '''SELECT * FROM ''' + DG.invDatabase + ''';'''
+                cur.execute(sql)
+                records = cur.fetchall()
+
+            else:
+                tk.messagebox.showerror("Error", 'No BOM on record to check inventory')
+        for record in records:
+            if(record[0] not in useList):
+                nonUseList.add(record[0])
+# =============================================================================
+#         nonUseList = set(nonUseList)
+#         useList = set(useList)
+# =============================================================================
+        print("Items Used: ", useList)
+        print("Items Unused: ", nonUseList)
         return
     
-    def checkInventory(bom):
+    def checkInventory(bom, useList, nonUseList):
         bomTableName = "bom_" + str(bom)
         sql = '''SELECT * FROM information_schema.tables WHERE table_name = %s''';
         cur.execute(sql, [bomTableName])
@@ -763,15 +852,18 @@ def createBOMGUI():
             records = cur.fetchall()
             if(records):
                 for record in records:
-                    sql = '''SELECT bom_id from ssg_test_inventory WHERE ManufacturerID = %s'''
+                    sql = '''SELECT bom_id from ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
                     cur.execute(sql, [record[0]])
                     bomRecords = cur.fetchall()
+                    
+                    # Check to see if item has it's own BOM, if so recursively call checkInventory()
                     if(bomRecords[0][0] != None):
                         print(bomRecords[0][0])
-                        checkInventory(bomRecords[0][0])
+                        useList.add(record[0])
+                        checkInventory(bomRecords[0][0], useList, nonUseList)
 
                     else:
-                        sql = '''SELECT Quantity from ssg_test_inventory
+                        sql = '''SELECT Quantity from ''' + DG.invDatabase + '''
                                 WHERE ManufacturerID = %s;'''
                         cur.execute(sql, [record[0]])
                         quantity = cur.fetchall()
@@ -781,30 +873,36 @@ def createBOMGUI():
                         cur.execute(sql, [bom, record[0]])
                         bomQuantity = cur.fetchall()
                         print("Required: ", bomQuantity[0][0])
-
-
+                        useList.add(record[0])
                     
         else:
             errorMessage = 'No BOM found for BOM #' + str(bom) 
             tk.messagebox.showerror('Error', errorMessage)
         
-    nameLabel = tk.Label(bomWindow, text = "Select item to create/edit BOM", font = ('calibre', 12))
+        
+    nameLabel = tk.Label(bomWindow, text = "Select item to create/edit BOM")
+    orLabel = tk.Label(bomWindow, text = "or", font = ('calibre', 12))
+    bomEntryLabel = tk.Label(bomWindow, text = "Type manufacturer IDs for \nBOM inventory check")
     nameList = []
     itemName = tk.StringVar()
-    sql = '''SELECT name FROM ssg_test_inventory ORDER BY name'''
+    sql = '''SELECT name FROM ''' + DG.invDatabase + ''' ORDER BY name'''
     cur.execute(sql)
     records = cur.fetchall()
     for record in records:
         nameList.append(record[0])
     bomChoiceBox = ttk.Combobox(state='readonly', values = nameList, textvariable = itemName)
+    bomEntryBox = tk.Entry(bomWindow, width = 25)
     createBomButton = tk.Button(bomWindow, text = "Create", command=createBom)
     checkInventoryButton = tk.Button(bomWindow, text="Check Inventory", command=checkInventoryHelper)
     returnButton = tk.Button(bomWindow, text = 'Home', command = lambda:[bomWindow.destroy(), mainMenu()])
     
-    nameLabel.place(relx=.5, rely=.15, anchor = 'center')
-    bomChoiceBox.place(relx=.5, rely=.3, anchor='center')
-    createBomButton.place(relx=.35, rely=.6, anchor = 'center')
-    checkInventoryButton.place(relx=.65, rely=.6, anchor='center')
+    nameLabel.place(relx=.3, rely=.15, anchor = 'center')
+    orLabel.place(relx=.5, rely=.25, anchor='center')
+    bomEntryLabel.place(relx=.7, rely=.15, anchor='center')
+    bomEntryBox.place(relx=.7, rely=.3, anchor='center')
+    bomChoiceBox.place(relx=.3, rely=.3, anchor='center')
+    createBomButton.place(relx=.3, rely=.6, anchor = 'center')
+    checkInventoryButton.place(relx=.7, rely=.6, anchor='center')
     returnButton.place(relx=.85, rely=.85, anchor='center')
     
     bomWindow.mainloop()
@@ -898,16 +996,14 @@ def checkOut():
         cur.execute(sql, [bar])
         records = cur.fetchall()
         for record in records:
-            if(quantity > record[0]):
-                tk.messagebox.showerror('Error', 'Item Quantity not available in inventory')
-                #
-                # NEED TO FINISH THIS, HAVE IT RETURN FALSE MAYBE? 
-                #
-                
+            if(int(quantity) > record[0]):
+                return False
+            else:
+                return True
         return
       
     def addItem():
-        sql = '''SELECT * FROM ssg_test_inventory WHERE barcode = %s;'''
+        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
         cur.execute(sql, [barEntry.get()])
         records = cur.fetchall()
         
@@ -916,21 +1012,35 @@ def checkOut():
             tk.messagebox.showerror("Error", "Item not currently in system")
             return
         
+        # Check previously added items for duplicates
         for line in checkOutTree.get_children():
-            print("Tree:", checkOutTree.item(line).get('values')[2], type(checkOutTree.item(line).get('values')[2]), "Barcode:", barEntry.get(), type(barEntry.get()))
+            #print("Tree:", checkOutTree.item(line).get('values')[2], type(checkOutTree.item(line).get('values')[2]), "Barcode:", barEntry.get(), type(barEntry.get()))
             if(str(checkOutTree.item(line).get('values')[2]) == barEntry.get()):
                 errorMessage = 'Item: "' + str(checkOutTree.item(line).get('values')[1]) + '" already in list'
                 tk.messagebox.showerror("Error", errorMessage)
                 barEntry.delete(0,tk.END)
                 barEntry.focus_force()
                 return
+            
         # If user didn't enter a quantity, just assign quantity of 1
         if(itemQuantityEntry.get() == ""):
             quantity = 1
         else:
             quantity = itemQuantityEntry.get()
         
-        checkOutTree.insert("", 'end', values=(records[0][0], records[0][2], barEntry.get(), quantity))     #manID, name, barcode, quantity))
+        # Check to make sure that quantity is available in database
+        if(not quantityCheck(barEntry.get(), quantity)):
+# =============================================================================
+#             errorMessage = 'Quantity of Item: "' + str(checkOutTree.item(line).get('values')[1]) + '" not available in database'
+# =============================================================================
+            errorMessage = 'Less than ' + quantity + ' "' + records[0][4] + '" available in database'
+            tk.messagebox.showerror("Error", errorMessage)
+            itemQuantityEntry.delete(0, tk.END)
+            itemQuantityEntry.focus_force()
+            return
+            
+        # Insertion of values into Treeview tree
+        checkOutTree.insert("", 'end', values=(records[0][0], records[0][4], barEntry.get(), quantity))     #manID, name, barcode, quantity))
         barEntry.delete(0, tk.END)
         itemQuantityEntry.delete(0, tk.END)
         barEntry.focus_force()
@@ -952,15 +1062,18 @@ def checkOut():
         editItemWindow.geometry("400x200")
         
         def finalizeEdit():
-#            checkOutTree.set()
-            checkOutTree.set(checkOutTree.focus(), column = '4', value = quantityEntry.get())
+            if(quantityCheck(str(selected['values'][2]), quantityEntry.get())):
+                checkOutTree.set(checkOutTree.focus(), column = '4', value = quantityEntry.get())
+            else:
+                errorMessage = 'Less than ' + quantityEntry.get() + ' "' + selected['values'][1] + '" available in database'
+                tk.messagebox.showerror("Error", errorMessage)
             return
         
         returnButton = tk.Button(editItemWindow, text = 'Return', command = editItemWindow.destroy)
         finalizeButton = tk.Button(editItemWindow, text = 'Finalize', command = lambda:[finalizeEdit(), editItemWindow.destroy()])
         manIDLabel = tk.Label(editItemWindow, text = 'Manufacturer ID:', font = ('calibre', 12))
         manIDLabel_fill = tk.Label(editItemWindow, text = '')
-        nameLabel = tk.Label(editItemWindow, text = 'Name:', font = ('calibre', 12))
+        nameLabel = tk.Label(editItemWindow, text = 'Description:', font = ('calibre', 12))
         nameLabel_fill = tk.Label(editItemWindow, text = '')
         barcodeLabel = tk.Label(editItemWindow, text = 'Barcode:', font = ('calibre', 12))
         barcodeLabel_fill = tk.Label(editItemWindow, text = '')
@@ -987,11 +1100,22 @@ def checkOut():
         editItemWindow.mainloop()
         return
     
-    def completeOrder():
+    def completeOrderGUI():
+        receiptScreen = tk.Tk() 
+        receiptScreen.title("Check Out Finalization")
+        receiptScreen.geometry("600x400")
+        
+        userBarLabel = tk.Label(receiptScreen, text = "User Barcode:", font = ('calibre', 12))
+        userBarEntry = tk.Entry(receiptScreen, width = 20)
+        #userBarEntry.bind('<Return>', lambda e: )
+        
+        userBarLabel.place(relx = .2, rely=.5, anchor='center')
+        userBarEntry.place(relx=.5, rely=.5, anchor = 'center')
         
         for line in checkOutTree.get_children():
             print(checkOutTree.item(line).get('values')[0], checkOutTree.item(line).get('values')[1], checkOutTree.item(line).get('values')[2], checkOutTree.item(line).get('values')[3])
         
+        receiptScreen.mainloop()
         return
     
     barEntryLabel = tk.Label(checkOutWindow, text = 'Barcode:', font = ('calibre', 12))
@@ -1003,7 +1127,7 @@ def checkOut():
     addItemButton = tk.Button(checkOutWindow, text = 'Add Item', command = addItem)
     editItemButton = tk.Button(checkOutWindow, text = "Edit Item", command = editItem)
     removeItemButton = tk.Button(checkOutWindow, text = 'Remove Item', command = removeItem)
-    completeOrderButton = tk.Button(checkOutWindow, text = 'Complete Order', command = completeOrder)
+    completeOrderButton = tk.Button(checkOutWindow, text = 'Complete Order', command = completeOrderGUI)
     homeButton = tk.Button(checkOutWindow, text = "Home", command = lambda:[checkOutWindow.destroy(), mainMenu()])
     barEntry.focus_force()
     barEntry.bind('<Return>', lambda e: itemQuantityEntry.focus_force())
@@ -1029,7 +1153,7 @@ def checkOut():
     checkOutTree.column("3", width = 100, anchor = 'w')
     checkOutTree.column("4", width = 60, anchor = 'w')
     checkOutTree.heading("1", text = "Manufacturer ID")
-    checkOutTree.heading("2", text = "Name")
+    checkOutTree.heading("2", text = "Description")
     checkOutTree.heading("3", text = "Barcode")
     checkOutTree.heading("4", text = "Quantity")
     
@@ -1069,7 +1193,7 @@ def generateBarcode(barcodeEntry, checkDigitLabel):
     for num in barcodeList:
         barcodeString += str(num)
     sqlCheck = barcodeString + str(checkDigit)        
-    sql = '''SELECT * FROM barcodes WHERE code=%s'''
+    sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code=%s'''
     cur.execute(sql, [sqlCheck])
     records = cur.fetchone()
     if records:
@@ -1157,10 +1281,20 @@ def mainMenu():
 
     mainMenuWindow.mainloop()
     
+def testingDatabase():
+    manid = 'test5'
+    cur = DG.conn.cursor()
+    sql = '''SELECT * FROM ssg_inventory WHERE manufacturerid = %s;'''
+    cur.execute(sql, [manid])
+    records = cur.fetchall()
+    for record in records:
+        print(record[0], record[1], record[2], record[3], record[4], type(record[4]), record[5])
+    return
+    
 def main():
     DG.main()
+    testingDatabase()
     mainMenu()
-
     DG.close()
 
 if __name__ == '__main__':
