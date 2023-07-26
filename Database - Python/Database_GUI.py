@@ -13,7 +13,7 @@ import ttk
 import Database_Globals as DG
 import random
 
-def searchGUI():
+def searchGUI(field):
     cur = DG.conn.cursor()
     if(searchType.get() == 'Barcode'):
         bar = searchVar.get()
@@ -22,6 +22,7 @@ def searchGUI():
         records = cur.fetchall()
         if(not records):
             tk.messagebox.showerror("Error", 'Item not found')
+            field.delete(0, tk.END)
         else:
             sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
             cur.execute(sql, [records[0][0]])
@@ -35,6 +36,7 @@ def searchGUI():
         invRecords, locRecords = DG.searchID(searchVar.get().lower())
         if(invRecords == None or locRecords == None):
             tk.messagebox.showerror('Search Error', "Item not found in inventory")
+            field.delete(0, tk.END)
             return
         else:
             mainMenuWindow.destroy()
@@ -77,10 +79,12 @@ def searchGUI():
             searchWindow.mainloop()
         else:
             tk.messagebox.showerror("Error", "Nothing found with that name")
+            field.delete(0, tk.END)
             
     else:
         print("I have no idea how you managed to do that")
         print(searchType.get())
+        field.delete(0, tk.END)
     return
     
     if(searchVar.get() == ""):
@@ -1227,8 +1231,9 @@ def mainMenu():
     searchChoiceBox.set('Barcode')
     
     def searchHelper(field):
-        searchGUI()
-        searchInventoryEntry.delete(0, tk.END)
+        searchGUI(field)
+        
+        #searchInventoryEntry.delete(0, tk.END)
         # May use later, currently just destroying the window so 'Home' Button from 'adjustItem' function doesn't add another main menu
         #field.delete(0, tk.END)
     
