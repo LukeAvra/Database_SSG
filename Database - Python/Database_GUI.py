@@ -7,7 +7,8 @@ Created on Thu Jul  6 08:32:28 2023
 import os
 import sys
 print(os.path.dirname(__file__))
-sys.path.append('C:\\Users\\Luke\\Documents\\Python Scripts\\Database_SSG\\Database - Python')
+#sys.path.append('C:\\Users\\Luke\\Documents\\Python Scripts\\Database_SSG\\Database - Python')
+sys.path.append(os.path.dirname(__file__))
 import tkinter as tk
 from tkinter import messagebox
 import ttk
@@ -33,7 +34,7 @@ def searchGUI(field):
         return
         
     # Currently pulling full inventory and location records but just calling adjust item with the manufacturer ID
-    elif(searchType.get() == 'Manufacturer ID'):
+    elif(searchType.get() == 'Manufacturer Number'):
         invRecords, locRecords = DG.searchID(searchVar.get().lower())
         if(invRecords == None or locRecords == None):
             tk.messagebox.showerror('Search Error', "Item not found in inventory")
@@ -182,7 +183,7 @@ def addItemGUI():
             cur.execute(sql, [newManID])
             manIDRecords = cur.fetchall()
             if(manIDRecords):
-                tk.messagebox.showerror('Error', 'Manufacturer ID has already been found in our system')
+                tk.messagebox.showerror('Error', 'Manufacturer Number has already been found in our system')
                 return
             
             
@@ -323,15 +324,15 @@ def addItemGUI():
     global item_to_add_manID
     item_to_add_manID = tk.StringVar()
     
-    addItemManufacturerLabel = tk.Label(addItemWindow, text = 'Manufacturer ID:', font=('calibre', 12, 'bold'))
+    addItemManufacturerLabel = tk.Label(addItemWindow, text = 'Manufacturer Number:', font=('calibre', 12, 'bold'))
     addItemManufacturerEntry = tk.Entry(addItemWindow, textvariable = item_to_add_manID, font=('calibre', 12))
     addItemManufacturerButton = tk.Button(addItemWindow, text = 'Add Item', command = dataCheck)
     returnButton = tk.Button(addItemWindow, text = 'Home', command = lambda: [addItemWindow.destroy(), mainMenu()])
     addItemManufacturerEntry.bind('<Return>', lambda e: dataCheck())
     addItemManufacturerEntry.focus_force()
 
-    addItemManufacturerLabel.place(relx=.116, rely=.4, anchor='center')
-    addItemManufacturerEntry.place(relx=.4, rely=.4, anchor='center')
+    addItemManufacturerLabel.place(relx=.01, rely=.4, anchor='w')
+    addItemManufacturerEntry.place(relx=.48, rely=.4, anchor='center')
     addItemManufacturerButton.place(relx=.7, rely=.4, anchor='center')
     returnButton.place(relx=.85, rely=.85, anchor = 'center')
     
@@ -421,7 +422,7 @@ def adjustItemGUI(item_for_adjustment):
         
         # Check for records of Manufacturer ID with discrepancy of reusing the same ID
         if(manIDRecords and manIDRecords[0][0] != invRecords[0][0]):
-            tk.messagebox.showerror('Error', 'Manufacturer ID has already been found in our system')
+            tk.messagebox.showerror('Error', 'Manufacturer Number has already been found in our system')
             return
         
         sql = '''UPDATE ''' + DG.invDatabase + '''
@@ -649,7 +650,7 @@ def removeItem():
         removeCheckWindow.mainloop()
         return
     
-    removeItemLabel = tk.Label(removeItemWindow, text = "Manufacturer ID:", font=('calibre', 12))
+    removeItemLabel = tk.Label(removeItemWindow, text = "Manufacturer Number:", font=('calibre', 12, 'bold'))
     removeItemEntry = tk.Entry(removeItemWindow, textvariable = removeVar, font=('calibre', 12))
     
     removeItemButton = tk.Button(removeItemWindow, text = 'Remove', command = removeCheck)
@@ -657,8 +658,8 @@ def removeItem():
     
     homeButton = tk.Button(removeItemWindow, text = 'Home', command = lambda: [removeItemWindow.destroy(), mainMenu()])
     
-    removeItemLabel.place(relx=.15, rely=.4, anchor='center')
-    removeItemEntry.place(relx=.4, rely=.4, anchor='center')
+    removeItemLabel.place(relx=.01, rely=.4, anchor='w')
+    removeItemEntry.place(relx=.48, rely=.4, anchor='center')
     removeItemButton.place(relx=.7, rely=.4, anchor='center')
     homeButton.place(relx=.85, rely=.85, anchor='center')
     
@@ -708,7 +709,7 @@ def createBOMGUI():
                 quantityEntry.focus_force()
                 return
             if(not inv):
-                tk.messagebox.showerror("Error", "Manufacturer ID not found")
+                tk.messagebox.showerror("Error", "Manufacturer Number not found")
             elif(quant < 1):
                 tk.messagebox.showerror("Error", "Please enter a quantity greater than zero")
             elif(manIDEntry.get().lower() == selfID):
@@ -759,7 +760,7 @@ def createBOMGUI():
             return
         
         
-        manIDLabel = tk.Label(createBomWindow, text = "Manufacturer ID:", font=('calibre', 12))
+        manIDLabel = tk.Label(createBomWindow, text = "Manufacturer Number:", font=('calibre', 12))
         manIDEntry = tk.Entry(createBomWindow, width = 30)
         quantityLabel = tk.Label(createBomWindow, text = "Quantity:", font=('calibre', 12))
         quantityEntry = tk.Entry(createBomWindow, width = 5)
@@ -790,7 +791,7 @@ def createBOMGUI():
         bomTree['show'] = 'headings' 
         bomTree.column("1", width = 100, anchor = 'w')
         bomTree.column("2", width = 100, anchor = 'w')
-        bomTree.heading("1", text = "Manufacturer ID")
+        bomTree.heading("1", text = "Manufacturer Number")
         bomTree.heading("2", text = "Quantity")
             
             
@@ -887,10 +888,10 @@ def createBOMGUI():
         
     nameLabel = tk.Label(bomWindow, text = "Select item to create/edit BOM")
     orLabel = tk.Label(bomWindow, text = "or", font = ('calibre', 12))
-    bomEntryLabel = tk.Label(bomWindow, text = "Type manufacturer IDs for \nBOM inventory check")
+    bomEntryLabel = tk.Label(bomWindow, text = "Type Manufacturer Numbers for \nBOM inventory check")
     nameList = []
     itemName = tk.StringVar()
-    sql = '''SELECT name FROM ''' + DG.invDatabase + ''' ORDER BY name'''
+    sql = '''SELECT Description FROM ''' + DG.invDatabase + ''' ORDER BY Description'''
     cur.execute(sql)
     records = cur.fetchall()
     for record in records:
@@ -916,9 +917,10 @@ def createBOMGUI():
 
 def userMenu():
     userWindow = tk.Tk()
-    userWindow.geometry("300x200")
+    userWindow.geometry("400x300")
     userWindow.title("Users")
     username = tk.StringVar()
+    cur = DG.conn.cursor()
     
     def createUser():
         createUserWindow = tk.Tk()
@@ -970,25 +972,49 @@ def userMenu():
         code = generateBarcode(barcodeEntry, checkDigitLabel)
         
         createUserWindow.mainloop()
-        
     
-    createUserButton = tk.Button(userWindow, text = "Create User", command = createUser)
+    def viewUser():
+        if(not userListBox.curselection()):
+            tk.messagebox.showerror("Error", 'Please select User')
+        else:
+            selectedUserWindow = tk.Tk()
+            selectedUserWindow.geometry("200x200")
+            selectedUserWindow.title("User Info")
+            
+            userLabel = tk.Label(selectedUserWindow, text = "User: ", font=('calibre', 12, 'bold'))
+            selectedUserLabel = tk.Label(selectedUserWindow, text = '', font=('calibre', 12))
+            barcodeLabel = tk.Label(selectedUserWindow, text = "Barcode: ", font=('calibre', 12, 'bold'))
+            selectedUserEntry = tk.Entry(selectedUserWindow)
+            
+            userLabel.place(relx=.1, rely=.2, anchor='w')
+            selectedUserLabel.place(relx=.5, rely=.2, anchor='w')
+            barcodeLabel.place(relx=.1, rely=.4, anchor='w')
+            selectedUserEntry.place(relx=.5, rely=.4, anchor='w')
+            
+            print(userListBox.get(userListBox.curselection()))
+        return
+    
+    userListBox = tk.Listbox(userWindow)
+    userScrollbar = tk.Scrollbar(userWindow)
+    
+    sql = '''SELECT username FROM ''' + DG.userDatabase + ''';'''
+    cur.execute(sql)
+    records = cur.fetchall()
+    for record in records:
+        userListBox.insert(tk.END, record[0])
+        
+    viewUserButton = tk.Button(userWindow, text = "View User", command = viewUser)
+    createUserButton = tk.Button(userWindow, text = "Create New User", command = createUser)
     homeButton = tk.Button(userWindow, text = 'Home', command = lambda:[userWindow.destroy(), mainMenu()])
     
-    createUserButton.place(relx=.5, rely=.5, anchor = 'center')
+    userListBox.place(relx=.5, rely=.3, anchor='center')
+    userScrollbar.place(relx=.63, rely=.3, anchor='center')
+    viewUserButton.place(relx=.5, rely=.67, anchor='center')
+    createUserButton.place(relx=.5, rely=.8, anchor = 'center')
     homeButton.place(relx=.85, rely=.85, anchor = 'center')
       
     userWindow.mainloop()
     return
-
-
-
-
-
-
-
-
-
 
 def checkOut():
     checkOutWindow = tk.Tk()
@@ -1076,7 +1102,7 @@ def checkOut():
         
         returnButton = tk.Button(editItemWindow, text = 'Return', command = editItemWindow.destroy)
         finalizeButton = tk.Button(editItemWindow, text = 'Finalize', command = lambda:[finalizeEdit(), editItemWindow.destroy()])
-        manIDLabel = tk.Label(editItemWindow, text = 'Manufacturer ID:', font = ('calibre', 12))
+        manIDLabel = tk.Label(editItemWindow, text = 'Manufacturer Number:', font = ('calibre', 12))
         manIDLabel_fill = tk.Label(editItemWindow, text = '')
         nameLabel = tk.Label(editItemWindow, text = 'Description:', font = ('calibre', 12))
         nameLabel_fill = tk.Label(editItemWindow, text = '')
@@ -1108,14 +1134,47 @@ def checkOut():
     def completeOrderGUI():
         receiptScreen = tk.Tk() 
         receiptScreen.title("Check Out Finalization")
-        receiptScreen.geometry("600x400")
+        receiptScreen.geometry("400x400")
+        #receiptScreen.focus_force()
+        
+        def onUserListBoxSelect(event):
+            index = event.widget.curselection()
+            value = event.widget.get(index)
+            sql = '''SELECT DISTINCT usercode FROM ''' + DG.userDatabase + ''' WHERE username = %s;'''
+            cur.execute(sql, [value])
+            records = cur.fetchall()
+            userBarEntry.delete(0, tk.END)
+            userBarEntry.insert(0, records[0][0])
+            return
+        
+        def finalizeCheckout():
+
+            print("USER: ", userListBox.get(userListBox.curselection()))
+            print("BARCODE: ", userBarEntry.get())
+            return
         
         userBarLabel = tk.Label(receiptScreen, text = "User Barcode:", font = ('calibre', 12))
         userBarEntry = tk.Entry(receiptScreen, width = 20)
+        userBarEntry.focus_force()
+        finalizeOrderButton = tk.Button(receiptScreen, text = "Checkout Items", command = finalizeCheckout)
         #userBarEntry.bind('<Return>', lambda e: )
         
-        userBarLabel.place(relx = .2, rely=.5, anchor='center')
-        userBarEntry.place(relx=.5, rely=.5, anchor = 'center')
+        userListBox = tk.Listbox(receiptScreen)
+        userScrollbar = tk.Scrollbar(receiptScreen)
+        
+        sql = '''SELECT username FROM ''' + DG.userDatabase + ''';'''
+        cur.execute(sql)
+        records = cur.fetchall()
+        for record in records:
+            userListBox.insert(tk.END, record[0])
+        
+        userListBox.bind('<<ListboxSelect>>', onUserListBoxSelect)
+        
+        userListBox.place(relx=.5, rely=.3, anchor='center')
+        userScrollbar.place(relx=.64, rely=.3, anchor='center')
+        userBarLabel.place(relx = .2, rely=.75, anchor='center')
+        userBarEntry.place(relx=.5, rely=.75, anchor = 'center')
+        finalizeOrderButton.place(relx=.5, rely = .85, anchor='center')
         
         for line in checkOutTree.get_children():
             print(checkOutTree.item(line).get('values')[0], checkOutTree.item(line).get('values')[1], checkOutTree.item(line).get('values')[2], checkOutTree.item(line).get('values')[3])
@@ -1131,7 +1190,7 @@ def checkOut():
     checkOutScrollbar = tk.Scrollbar(checkOutWindow, orient='vertical', command = checkOutTree.yview)
     addItemButton = tk.Button(checkOutWindow, text = 'Add Item', command = addItem)
     editItemButton = tk.Button(checkOutWindow, text = "Edit Item", command = editItem)
-    removeItemButton = tk.Button(checkOutWindow, text = 'Remove Item', command = removeItem)
+    removeItemButton = tk.Button(checkOutWindow, text = 'Delete Item', command = removeItem)
     completeOrderButton = tk.Button(checkOutWindow, text = 'Complete Order', command = completeOrderGUI)
     homeButton = tk.Button(checkOutWindow, text = "Home", command = lambda:[checkOutWindow.destroy(), mainMenu()])
     barEntry.focus_force()
@@ -1146,9 +1205,9 @@ def checkOut():
     checkOutTree.place(relx=.5, rely=.45, anchor = 'center')
     addItemButton.place(relx=.8, rely=.1, anchor = 'center')
     editItemButton.place(relx=.9, rely=.3, anchor = 'center')
-    removeItemButton.place(relx=.9, rely=.5, anchor = 'center')
-    completeOrderButton.place(relx=.65, rely=.85, anchor='center')
-    homeButton.place(relx=.85, rely=.85, anchor = 'center')
+    removeItemButton.place(relx=.9, rely=.45, anchor = 'center')
+    completeOrderButton.place(relx=.5, rely=.85, anchor='center')
+    homeButton.place(relx=.9, rely=.85, anchor = 'center')
     
     checkOutTree.configure(yscrollcommand = checkOutScrollbar.set)
     checkOutTree["columns"] = ("1", "2", "3", "4")
@@ -1157,26 +1216,13 @@ def checkOut():
     checkOutTree.column("2", width = 200, anchor = 'w')
     checkOutTree.column("3", width = 100, anchor = 'w')
     checkOutTree.column("4", width = 60, anchor = 'w')
-    checkOutTree.heading("1", text = "Manufacturer ID")
+    checkOutTree.heading("1", text = "Manufacturer #")
     checkOutTree.heading("2", text = "Description")
     checkOutTree.heading("3", text = "Barcode")
     checkOutTree.heading("4", text = "Quantity")
     
     checkOutWindow.mainloop()
     return
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def generateBarcode(barcodeEntry, checkDigitLabel):
     cur = DG.conn.cursor()
@@ -1222,7 +1268,7 @@ def mainMenu():
     mainMenuWindow.focus_set()
     
     # When SQL server is connected, use this instead of dummy list below
-    choiceList = ['Barcode', 'Manufacturer ID', 'Item Name']
+    choiceList = ['Barcode', 'Manufacturer Number', 'Item Name']
     
     searchChoiceBox = ttk.Combobox(
                         state='readonly',

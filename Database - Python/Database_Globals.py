@@ -42,7 +42,7 @@ def clear():
         
 def createGlobalVars():
     invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = config.configDBVars()
-    print(invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase)
+    #print(invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase)
     return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase
 
 def roomList():
