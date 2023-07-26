@@ -44,7 +44,7 @@ def searchGUI():
         if(records):
             def adjustItemHelper():
                 selectedItem = invListbox.get(invListbox.curselection())
-                sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Name=%s;'''
+                sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Description=%s;'''
                 cur.execute(sql, [selectedItem])
                 ID_for_adjustment = cur.fetchall()
                 searchWindow.destroy()
@@ -53,7 +53,7 @@ def searchGUI():
             mainMenuWindow.destroy()
             searchWindow = tk.Tk()
             searchWindow.title("Search Results")
-            searchWindow.geometry("600x400")
+            searchWindow.geometry("400x250")
             
             invLabel = tk.Label(searchWindow, text='Similar items found\nSelect item to adjust or click new item')
             invListbox = tk.Listbox(searchWindow, width=40, height=5, selectmode = 'single')
@@ -62,11 +62,11 @@ def searchGUI():
             adjustItemButton = tk.Button(searchWindow, text='Adjust Item', command = adjustItemHelper)
             homeButton = tk.Button(searchWindow, text = 'Home', command = lambda:[searchWindow.destroy(), mainMenu()])
             
-            invLabel.place(relx=.4, rely=.3, anchor='center')
-            invListbox.place(relx=.4, rely=.5, anchor='center')
-            invScrollbar.place(relx=.59, rely=.5, anchor='center')
-            adjustItemButton.place(relx=.4, rely=.75, anchor='center')
-            homeButton.place(relx=.85, rely=.85, anchor='center')
+            invLabel.place(relx=.5, rely=.15, anchor='center')
+            invListbox.place(relx=.5, rely=.45, anchor='center')
+            invScrollbar.place(relx=.79, rely=.45, anchor='center')
+            adjustItemButton.place(relx=.5, rely=.75, anchor='center')
+            homeButton.place(relx=.5, rely=.9, anchor='center')
             
             invListbox.config(yscrollcommand = invScrollbar.set)
             invScrollbar.config(command = invListbox.yview)
@@ -1299,6 +1299,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    
-# Can currently add the same barcode multiple times, can NOT allow that to happen

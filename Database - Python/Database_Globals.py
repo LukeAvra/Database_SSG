@@ -103,7 +103,7 @@ def searchTotal(ID, version):
 def searchByName(searchItem):
     cur = conn.cursor()
     userInputItem = '%' + searchItem + '%'
-    sql = '''SELECT DISTINCT Name FROM ''' + invDatabase + ''' WHERE Name ILIKE %s'''
+    sql = '''SELECT DISTINCT Description FROM ''' + invDatabase + ''' WHERE Description ILIKE %s'''
     cur.execute(sql, [userInputItem])
     records = cur.fetchall()
     return records
