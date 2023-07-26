@@ -107,6 +107,14 @@ def addItemGUI():
         
         # If Else statements are to convert empty string to something that can be stored in SMALLINT
         # Could also be used to send warning when user tries to establish something without a data field
+        
+        def pullBarcode(BarcodeEntry):
+            bar = barcodeEntry.get() + checkDigitLabel.cget("text")
+            BarcodeEntry.delete(0, tk.END)
+            BarcodeEntry.insert(0, bar)
+            #print(bar)
+            return
+        
         def newItem():
             if(manIDEntry.get() == ""):
                 newManID = None
@@ -296,7 +304,7 @@ def addItemGUI():
         returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), mainMenu()])
         returnButton.place(relx=.85, rely=.85, anchor='center')
         
-        barcodeGeneratorButton = tk.Button(newItemWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel)])
+        barcodeGeneratorButton = tk.Button(newItemWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel), pullBarcode(BarcodeEntry)])
         barcodeGeneratorButton.place(relx=.5, rely=.92, anchor='center')
         barcodeEntry = tk.Entry(newItemWindow, font=('calibre', 12))
         barcodeEntry.place(relx=.5, rely=.85, anchor = 'center')
