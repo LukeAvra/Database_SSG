@@ -32,7 +32,7 @@ def main():
     # CREATE DIRECTORY PER DAY, DIRECTORY SHOULD 5 FILES, ONE FOR EACH DATABASE
     #filePath = os.path.dirname(__file__) + "\\test.sql"    
     month = datetime.now().strftime("%B")
-    day = datetime.now().strftime("%d")
+    #day = datetime.now().strftime("%d")
     year= datetime.now().strftime("%Y")
     
     # Local check for year/month directories

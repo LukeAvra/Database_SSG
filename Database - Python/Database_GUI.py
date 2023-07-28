@@ -9,11 +9,13 @@ import sys
 print(os.path.dirname(__file__))
 #sys.path.append('C:\\Users\\Luke\\Documents\\Python Scripts\\Database_SSG\\Database - Python')
 sys.path.append(os.path.dirname(__file__))
+sys.setrecursionlimit(5000)
 import tkinter as tk
 from tkinter import messagebox
 import ttk
 import Database_Globals as DG
 import random
+
 
 def searchGUI(field):
     cur = DG.conn.cursor()
@@ -210,7 +212,7 @@ def addItemGUI():
             
             print('Item should have been added')
             newItemWindow.destroy()
-            addItemGUI()
+            mainMenu()
 
         # variables for adding items
         manID = tk.StringVar()
@@ -321,12 +323,11 @@ def addItemGUI():
         cur.execute(sql, [item_to_add_manID.get().lower()])
         records = cur.fetchall()
         if records:
-            addItemWindow.destroy()
+            #addItemWindow.destroy()
             adjustItemGUI(item_to_add_manID.get().lower())
         else:
-            addItemWindow.destroy()
+            #addItemWindow.destroy()
             newItemGUI()
-            return
         return
     
     global item_to_add_manID
@@ -334,9 +335,9 @@ def addItemGUI():
     
     addItemManufacturerLabel = tk.Label(addItemWindow, text = 'Manufacturer Number:', font=('calibre', 12, 'bold'))
     addItemManufacturerEntry = tk.Entry(addItemWindow, textvariable = item_to_add_manID, font=('calibre', 12))
-    addItemManufacturerButton = tk.Button(addItemWindow, text = 'Add Item', command = dataCheck)
+    addItemManufacturerButton = tk.Button(addItemWindow, text = 'Add Item', command = lambda: [addItemWindow.destroy(), dataCheck()])
     returnButton = tk.Button(addItemWindow, text = 'Home', command = lambda: [addItemWindow.destroy(), mainMenu()])
-    addItemManufacturerEntry.bind('<Return>', lambda e: dataCheck())
+    addItemManufacturerEntry.bind('<Return>', lambda e: [addItemWindow.destroy(), dataCheck()])
     addItemManufacturerEntry.focus_force()
 
     addItemManufacturerLabel.place(relx=.01, rely=.4, anchor='w')
