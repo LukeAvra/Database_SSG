@@ -10,11 +10,6 @@ sys.path.append(os.path.dirname(__file__))
 from datetime import datetime
 import Database_Globals as DG
 
-
-#os.chdir('C:\\Program Files\\PostgreSQL')
-# =============================================================================
-# os.system('''set "PGPASSWORD=SSGllc2023@)@#" && psql -U postgres -d backtest -c "SELECT * FROM test" && set "PGPASSWORD=""''')
-# =============================================================================
 def insertion(sqlFile, database):
     cur = DG.conn.cursor()
     sql = '''SELECT * FROM ''' + database + ''';'''
@@ -28,53 +23,55 @@ def insertion(sqlFile, database):
 
 def main():
     DG.main()
-
-    # CREATE DIRECTORY PER DAY, DIRECTORY SHOULD 5 FILES, ONE FOR EACH DATABASE
-    #filePath = os.path.dirname(__file__) + "\\test.sql"    
     month = datetime.now().strftime("%B")
-    #day = datetime.now().strftime("%d")
     year= datetime.now().strftime("%Y")
-    
-    # Local check for year/month directories
-    if(not os.path.exists(os.path.dirname(__file__) + "\\" + year)):
-        os.mkdir(os.path.dirname(__file__) + "\\" + year)
-    if(not os.path.exists(os.path.dirname(__file__) + "\\" + year + "\\" + month)):
-        os.mkdir(os.path.dirname(__file__) + "\\" + year + "\\" + month)
-    
-    # Sharepoint check for year/month directories
-    shareBasePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra"
-    if(not os.path.exists(shareBasePath + "\\" + year)):
-        os.mkdir(shareBasePath + "\\" + year)
-    if(not os.path.exists(shareBasePath + "\\" + year + "\\" + month)):
-        os.mkdir(shareBasePath + "\\" + year + "\\" + month)
-        
     dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
+    dbList = [DG.invDatabase, DG.locDatabase, DG.userDatabase, DG.bomDatabase, DG.barDatabase]
     
-    # Filepath and writing file for local machine
-    filePath = os.path.dirname(__file__) + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
-    sqlFile = open(filePath, 'w')
+    def local():
+        if(not os.path.exists(os.path.dirname(__file__) + "\\" + year)):
+            os.mkdir(os.path.dirname(__file__) + "\\" + year)
+        if(not os.path.exists(os.path.dirname(__file__) + "\\" + year + "\\" + month)):
+            os.mkdir(os.path.dirname(__file__) + "\\" + year + "\\" + month)
+            
+        filePath = os.path.dirname(__file__) + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
+        sqlFile = open(filePath, 'w')
+        
+        for db in dbList:
+            insertion(sqlFile, db)
+            
+        return 
     
-    # Filepath and writing file for Sharepoint file
-    filePath = shareBasePath + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
-    sqlFile = open(filePath, 'w')
+    def share():
+        shareBasePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra"
+        if(not os.path.exists(shareBasePath + "\\" + year)):
+            os.mkdir(shareBasePath + "\\" + year)
+        if(not os.path.exists(shareBasePath + "\\" + year + "\\" + month)):
+            os.mkdir(shareBasePath + "\\" + year + "\\" + month)
+        
+        filePath = shareBasePath + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
+        sqlFile = open(filePath, 'w')
+        
+        for db in dbList:
+            insertion(sqlFile, db)        
+        return
     
-    #os.mkdir("C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra"  + "\\" + year + "\\" + month)
-    
-# =============================================================================
-#     
-#     os.mkdir(os.path.dirname(__file__) + "\\" + dt_str)
-#     filePath = os.path.dirname(__file__) + "\\" + dt_str + "\\database.sql"
-#     sqlFile = open(filePath, 'w')    
-# =============================================================================
+    numArg = len(sys.argv)
+    if(numArg > 2):
+        print("Too many commandline arguments")
+        return
+    if(numArg > 1):
+        if(sys.argv[1] == '-l'):
+            local()
+        if(sys.argv[1] == '-r'):
+            share()
+        if(sys.argv[1] == '-a'):
+            local()
+            share()
+    else:
+        local()
+        share()
 
-    insertion(sqlFile, DG.invDatabase)
-    insertion(sqlFile, DG.locDatabase)
-    insertion(sqlFile, DG.userDatabase)
-    insertion(sqlFile, DG.bomDatabase)
-    insertion(sqlFile, DG.barDatabase)
-
-    
-    
     return
 
 if __name__ == "__main__":
