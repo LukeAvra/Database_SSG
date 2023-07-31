@@ -17,10 +17,9 @@ def connect():
     try:
         # read params from config file 
         params, parser = config.config()
-        print(parser[0])
         
         # Connect to the server 
-        print('Connecting to the PostgreSQL database...')
+        print('Connecting to the PostgreSQL database at ''' + parser[0][1] + '...')
         conn = psycopg2.connect(**params)
         conn.autocommit = True
     except(Exception, psycopg2.DatabaseError) as error:

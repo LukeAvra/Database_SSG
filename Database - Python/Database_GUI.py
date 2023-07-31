@@ -6,8 +6,6 @@ Created on Thu Jul  6 08:32:28 2023
 """
 import os
 import sys
-print(os.path.dirname(__file__))
-#sys.path.append('C:\\Users\\Luke\\Documents\\Python Scripts\\Database_SSG\\Database - Python')
 sys.path.append(os.path.dirname(__file__))
 sys.setrecursionlimit(5000)
 import tkinter as tk
@@ -982,25 +980,37 @@ def userMenu():
         
         createUserWindow.mainloop()
     
+    # Helper function for double clicking items in User Listbox
+    def viewUserHelper(event):
+        viewUser()
+        return
+    
     def viewUser():
         if(not userListBox.curselection()):
             tk.messagebox.showerror("Error", 'Please select User')
         else:
             selectedUserWindow = tk.Tk()
-            selectedUserWindow.geometry("200x200")
+            selectedUserWindow.geometry("300x150")
             selectedUserWindow.title("User Info")
             
+            sql = '''SELECT usercode FROM ''' + DG.userDatabase + ''' WHERE username = %s;'''
+            cur.execute(sql, [userListBox.get(userListBox.curselection()).lower()])
+            records = cur.fetchall()
+            
             userLabel = tk.Label(selectedUserWindow, text = "User: ", font=('calibre', 12, 'bold'))
-            selectedUserLabel = tk.Label(selectedUserWindow, text = '', font=('calibre', 12))
+            selectedUserLabel = tk.Label(selectedUserWindow, text = '', font=('bold'))
             barcodeLabel = tk.Label(selectedUserWindow, text = "Barcode: ", font=('calibre', 12, 'bold'))
             selectedUserEntry = tk.Entry(selectedUserWindow)
             
-            userLabel.place(relx=.1, rely=.2, anchor='w')
-            selectedUserLabel.place(relx=.5, rely=.2, anchor='w')
-            barcodeLabel.place(relx=.1, rely=.4, anchor='w')
-            selectedUserEntry.place(relx=.5, rely=.4, anchor='w')
+            userLabel.place(relx=.1, rely=.3, anchor='w')
+            selectedUserLabel.place(relx=.5, rely=.3, anchor='w')
+            barcodeLabel.place(relx=.1, rely=.5, anchor='w')
+            selectedUserEntry.place(relx=.5, rely=.5, anchor='w')
             
-            print(userListBox.get(userListBox.curselection()))
+            selectedUserLabel.config(text = userListBox.get(userListBox.curselection()))
+            selectedUserEntry.insert(0, records[0][0])
+            selectedUserWindow.focus_force()
+            #print(userListBox.get(userListBox.curselection()))
         return
     
     userListBox = tk.Listbox(userWindow)
@@ -1010,12 +1020,12 @@ def userMenu():
     cur.execute(sql)
     records = cur.fetchall()
     for record in records:
-        userListBox.insert(tk.END, record[0])
+        userListBox.insert(tk.END, record[0].upper())
         
     viewUserButton = tk.Button(userWindow, text = "View User", command = viewUser)
     createUserButton = tk.Button(userWindow, text = "Create New User", command = createUser)
     homeButton = tk.Button(userWindow, text = 'Home', command = lambda:[userWindow.destroy(), mainMenu()])
-    
+    userListBox.bind('<Double-1>', viewUserHelper)
     userListBox.place(relx=.5, rely=.3, anchor='center')
     userScrollbar.place(relx=.63, rely=.3, anchor='center')
     viewUserButton.place(relx=.5, rely=.67, anchor='center')
@@ -1144,10 +1154,11 @@ def checkOut():
         receiptScreen = tk.Tk() 
         receiptScreen.title("Check Out Finalization")
         receiptScreen.geometry("400x400")
-        #receiptScreen.focus_force()
         
         def onUserListBoxSelect(event):
             index = event.widget.curselection()
+            if(not index):
+                return
             value = event.widget.get(index)
             sql = '''SELECT DISTINCT usercode FROM ''' + DG.userDatabase + ''' WHERE username = %s;'''
             cur.execute(sql, [value])
@@ -1157,7 +1168,6 @@ def checkOut():
             return
         
         def finalizeCheckout():
-
             print("USER: ", userListBox.get(userListBox.curselection()))
             print("BARCODE: ", userBarEntry.get())
             return
@@ -1175,7 +1185,7 @@ def checkOut():
         cur.execute(sql)
         records = cur.fetchall()
         for record in records:
-            userListBox.insert(tk.END, record[0])
+            userListBox.insert(tk.END, record[0].upper())
         
         userListBox.bind('<<ListboxSelect>>', onUserListBoxSelect)
         
@@ -1342,19 +1352,8 @@ def mainMenu():
 
     mainMenuWindow.mainloop()
     
-def testingDatabase():
-    manid = 'test5'
-    cur = DG.conn.cursor()
-    sql = '''SELECT * FROM ssg_inventory WHERE manufacturerid = %s;'''
-    cur.execute(sql, [manid])
-    records = cur.fetchall()
-    for record in records:
-        print(record[0], record[1], record[2], record[3], record[4], type(record[4]), record[5])
-    return
-    
 def main():
     DG.main()
-    testingDatabase()
     mainMenu()
     DG.close()
 
