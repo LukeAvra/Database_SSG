@@ -1020,7 +1020,7 @@ def userMenu():
     cur.execute(sql)
     records = cur.fetchall()
     for record in records:
-        userListBox.insert(tk.END, record[0].upper())
+        userListBox.insert(tk.END, record[0].capitalize())
         
     viewUserButton = tk.Button(userWindow, text = "View User", command = viewUser)
     createUserButton = tk.Button(userWindow, text = "Create New User", command = createUser)
@@ -1185,7 +1185,7 @@ def checkOut():
         cur.execute(sql)
         records = cur.fetchall()
         for record in records:
-            userListBox.insert(tk.END, record[0].upper())
+            userListBox.insert(tk.END, record[0].capitalize())
         
         userListBox.bind('<<ListboxSelect>>', onUserListBoxSelect)
         
