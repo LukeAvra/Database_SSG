@@ -136,8 +136,6 @@ if __name__ == "__main__":
 #  d58        618 x  618    58mm round die-cut
 # =============================================================================
 
-
-
 # Changes from testing labels
 
 # rotate changed to 0
