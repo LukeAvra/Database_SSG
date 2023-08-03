@@ -12,6 +12,7 @@ import tkinter as tk
 from tkinter import messagebox
 import ttk
 import Database_Globals as DG
+import Print_Label as PL
 import random
 
 
@@ -124,6 +125,7 @@ def addItemGUI():
         BarcodeEntry.insert(0, bar)
         #print(bar)
         return
+
     
     # If Else statements are to convert empty string to something that can be stored in SMALLINT
     # Could also be used to send warning when user tries to establish something without a data field
@@ -183,6 +185,14 @@ def addItemGUI():
             newShelfLocation = None
         else:
             newShelfLocation = shelfLocationEntry.get()
+            
+            
+            
+        # Uncomment this when ready to use the Brother printer for all labels
+# =============================================================================
+#         PL.createBarcodeImage(newManID, newBarcode)
+#         PL.printBarcode()
+# =============================================================================
             
         # Check if Barcode is already in system, do extraneous checks, adding items doesn't have to be blazing fast
         sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
@@ -327,6 +337,10 @@ def addItemGUI():
     checkDigitLabel = tk.Label(newItemWindow, text = '', font=('calibre', 12))
     checkDigitLabel.place(relx=.7, rely=.85, anchor = 'center')
     
+    # Fill in the barcode entry automatically on window creation
+    generateBarcode(barcodeEntry, checkDigitLabel)
+    pullBarcode(BarcodeEntry)
+    
     newItemWindow.mainloop()
     return
 
@@ -386,6 +400,11 @@ def adjustItemGUI(item_for_adjustment):
     adjustItemWindow = tk.Tk()
     adjustItemWindow.geometry("600x400")
     adjustItemWindow.title('Adjust Item')
+    
+    def printCode():
+        PL.createBarcodeImage(manIDEntry.get().lower(), BarcodeEntry.get())
+        PL.printBarcode()
+        return
     
     def adjustItem():
         adjustedManID = manIDEntry.get().lower()
@@ -629,11 +648,14 @@ def adjustItemGUI(item_for_adjustment):
     shelfLocationLabel.place(relx=.05, rely=.7, anchor='w')
     shelfLocationEntry.place(relx=.55, rely=.7, anchor='center')
     
+    printButton = tk.Button(adjustItemWindow, text = "Print Label", command = printCode)
+    printButton.place(relx= .7, rely= .85, anchor = 'center')
+    
     adjustButton = tk.Button(adjustItemWindow, text = 'Adjust', command = adjustItem)
-    adjustButton.place(relx=.5, rely = .85, anchor='center')
+    adjustButton.place(relx= .5, rely= .85, anchor='center')
     
     returnButton = tk.Button(adjustItemWindow, text = 'Home', command = lambda: [adjustItemWindow.destroy(), mainMenu()])
-    returnButton.place(relx=.85, rely=.9, anchor='center')
+    returnButton.place(relx= .85, rely= .9, anchor='center')
 
     adjustItemWindow.focus_force()
     adjustItemWindow.mainloop()
@@ -664,7 +686,7 @@ def removeItem():
             removeItemEntry.delete(0, tk.END)
         else:
             tk.messagebox.showerror('Error', 'Item not found in inventory')
-
+        return
             
     def removeCheckHelper(*args):
         manIDPartial = '%' + removeItemEntry.get().lower() + '%'
@@ -676,7 +698,7 @@ def removeItem():
             removeItemLabel.place(relx=.01, rely=.15)
             removeItemEntry.place(relx=.48, rely=.15, anchor='center')
             searchButton.place(relx=.7, rely=.15, anchor='center')
-            
+
             def fillRemoveTree():
     # =============================================================================
     #             sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE manufacturerid = %s;'''
@@ -687,13 +709,37 @@ def removeItem():
                 
                 return
             
+            def removeCheck():
+                #Double check that item should actually be removed
+                removeCheckWindow = tk.Tk()
+                removeCheckWindow.geometry("400x200")
+                removeCheckWindow.title("Are you sure?")
+                removeCheckWindow.focus_force()
+                
+                item_to_remove = removeTree.item(removeTree.focus())['values'][0]
+                removeText = "Are you sure you want to remove item: " + item_to_remove
+                removeLabel = tk.Label(removeCheckWindow, text = removeText, font = ('calibre', 12))
+                yesButton = tk.Button(removeCheckWindow, text = "Yes", command = lambda: [itemRemoval(item_to_remove), removeCheckWindow.destroy()])
+                noButton = tk.Button(removeCheckWindow, text = "No", command = removeCheckWindow.destroy)
+                removeItemEntry.unbind('<Return>')
+                removeCheckWindow.bind('<Return>', lambda event:[itemRemoval(removeVar.get()), removeCheckWindow.destroy(), removeItemEntry.bind('<Return>', lambda e: removeCheck())])
+                
+                removeLabel.place(relx=.5, rely=.3, anchor='center')
+                yesButton.place(relx=.2, rely=.6, anchor = 'center')
+                noButton.place(relx=.8, rely=.6, anchor='center')   
+                
+                removeCheckWindow.mainloop()
+                return
+            
             removeTree = ttk.Treeview(removeItemWindow, selectmode = 'browse')
             removeTreeScrollbar = tk.Scrollbar(removeItemWindow, orient='vertical', command = removeTree.yview)
             
             removeTreeScrollbar.place(relx=.84, rely=.55, anchor = 'w')
             removeTree.place(relx=.1, rely=.55, anchor = 'w')
             homeButton.place(relx=.85, rely=.9, anchor='center')
-            
+            removeButton = tk.Button(removeItemWindow, text = 'Delete', command = removeCheck)
+            removeButton.place(relx= .5, rely=.9, anchor='center')
+
             removeTree.configure(yscrollcommand = removeTreeScrollbar.set)
             removeTree["columns"] = ("1", "2", "3", "4")
             removeTree['show'] = 'headings' 
@@ -709,26 +755,7 @@ def removeItem():
         
         return
                 
-    def removeCheck():
-        #Double check that item should actually be removed
-        removeCheckWindow = tk.Tk()
-        removeCheckWindow.geometry("400x200")
-        removeCheckWindow.title("Are you sure?")
-        removeCheckWindow.focus_force()
-        
-        removeText = "Are you sure you want to remove item: " + removeVar.get().lower()
-        removeLabel = tk.Label(removeCheckWindow, text = removeText, font = ('calibre', 12))
-        yesButton = tk.Button(removeCheckWindow, text = "Yes", command = lambda: [itemRemoval(removeVar.get().lower()), removeCheckWindow.destroy()])
-        noButton = tk.Button(removeCheckWindow, text = "No", command = removeCheckWindow.destroy)
-        removeItemEntry.unbind('<Return>')
-        removeCheckWindow.bind('<Return>', lambda event:[itemRemoval(removeVar.get()), removeCheckWindow.destroy(), removeItemEntry.bind('<Return>', lambda e: removeCheck())])
-        
-        removeLabel.place(relx=.5, rely=.3, anchor='center')
-        yesButton.place(relx=.2, rely=.6, anchor = 'center')
-        noButton.place(relx=.8, rely=.6, anchor='center')   
-        
-        removeCheckWindow.mainloop()
-        return
+
     
     removeVar.trace_add('write', removeCheckHelper)
     removeItemLabel = tk.Label(removeItemWindow, text = "Manufacturer Number:", font=('calibre', 12, 'bold'))
@@ -739,10 +766,12 @@ def removeItem():
     
     homeButton = tk.Button(removeItemWindow, text = 'Home', command = lambda: [removeItemWindow.destroy(), mainMenu()])
     
+    
     removeItemLabel.place(relx=.01, rely=.4, anchor='w')
     removeItemEntry.place(relx=.48, rely=.4, anchor='center')
     searchButton.place(relx=.7, rely=.4, anchor='center')
     homeButton.place(relx=.85, rely=.85, anchor='center')
+    
     
     removeItemEntry.focus_force()
     removeItemWindow.mainloop()
