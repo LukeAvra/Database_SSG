@@ -40,9 +40,9 @@ def clear():
         x = system('clear')
         
 def createGlobalVars():
-    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = config.configDBVars()
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, buildDatabase = config.configDBVars()
     #print(invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase)
-    return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase
+    return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, buildDatabase
 
 def roomList():
     cur = conn.cursor()
@@ -114,8 +114,9 @@ def main():
     global barDatabase
     global bomDatabase
     global locDatabase
+    global buildDatabase
     conn = connect()
-    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase = createGlobalVars()
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, buildDatabase = createGlobalVars()
 
 if __name__ == '__main__':
     main()

@@ -1,15 +1,14 @@
-=================================================================================
-=Which fields will we want exactly? Should establish database before moving further
-=================================================================================
-=Which Rooms will we want for inventory storage?
-=================================================================================
-
-
-
-
-Finish up the GUI
-Need to add 'adjust' and 'remove' items
-
-Find a way to implement bill of materials
-
-Find a way to implement the barcode scanner and reader
+For implementation of excel spreadsheet:
+	By Box Sheet:	
+		On the By Box sheet, why are there two separate quantity columns? 
+			For Box 1, the second quant column is marked 'unit cost' but holds identical values to the first quant column
+		Why are some items marked red?
+	List Sheet:
+		Location column. What's going on there exactly?
+		Quantity, Quantity Used, Remaining and New Count?
+		Why are some items marked red?
+		
+	
+Part Number			-	Manufacturer Number
+Alternate Number	-	Supplier Number?
+Quantity Used, 

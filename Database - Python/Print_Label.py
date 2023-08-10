@@ -13,7 +13,6 @@ from brother_ql.conversion import convert
 from brother_ql.backends.helpers import send
 from brother_ql.raster import BrotherQLRaster
 from brother_ql.devicedependent import models
-import random
 import treepoem
 
 def createBarcodeImage(barcodeText, barcode):
@@ -81,12 +80,12 @@ def printBarcode():
     instructions = convert(
         qlr = BrotherQLRaster(model),
         images = [im],
-        label = "62red",
+        label = "62",
         rotate='0',
         threshold=95.0,
         dither=False,
         compress=False,
-        red=True,
+        red=False,
         dpi_600=False,
         hq=True,
         cut=True  

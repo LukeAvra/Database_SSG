@@ -58,11 +58,15 @@ def create():
                 bom_id SMALLINT,
                 bom_name VARCHAR(100)
                 );
+            CREATE TABLE IF NOT EXISTS ssg_builds (
+                Build_Name VARCHAR(100),
+                barcode VARCHAR(100)
+                );
             END'''
             
     cur.execute(sql)
     
-    print("Test Inventory, Location and Users tables created successfully...")
+    print("Tables created successfully...")
     cur.close()
     
 def testData():
@@ -146,16 +150,18 @@ def testData_Extended():
     print('Initial dummy data added to ssf_test_inventory, ssg_test_locations and ssg_test_users')
     cur.close()
     
-def wipe():
-    # BE FUCKING CAREFUL.
-    # TESTING MISTAKES ONLY
-    cur = conn.cursor()
-    sql = '''DELETE FROM ssg_inventory;
-             DELETE FROM ssg_locations;
-             DELETE FROM barcodes;
-         END'''
-    cur.execute(sql)
-    cur.close
+# =============================================================================
+# def wipe():
+#     # BE FUCKING CAREFUL.
+#     # TESTING MISTAKES ONLY
+#     cur = conn.cursor()
+#     sql = '''DELETE FROM ssg_inventory;
+#              DELETE FROM ssg_locations;
+#              DELETE FROM barcodes;
+#          END'''
+#     cur.execute(sql)
+#     cur.close
+# =============================================================================
 
 def main():
     global conn 
