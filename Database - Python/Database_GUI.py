@@ -903,14 +903,53 @@ def createBOMGUI():
 def viewBuilds():
     viewBuildsWindow = tk.Tk()
     viewBuildsWindow.title("Builds/RMAs")
-    viewBuildsWindow.geometry("400x400")
+    viewBuildsWindow.geometry("300x300")
+    viewBuildsWindow.focus_force()
     cur = DG.conn.cursor()
     
-    buildListBox = tk.Listbox(viewBuildsWindow, width=40, height=15, selectmode = 'single')
+    def buildSelection(event):
+        tableName = buildListBox.get(buildListBox.curselection())
+        sql = '''SELECT * FROM ''' + tableName + ''';'''
+        cur.execute(sql)
+        selectedBuildRecords = cur.fetchall()
+        if(selectedBuildRecords):
+            def fillBuildTree(rec):
+                buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
+                return
+            
+            viewBuildsWindow.geometry("700x500")
+            buildNameLabel = tk.Label(viewBuildsWindow, text = tableName, font=('calibre', 12, 'bold'))
+            
+            buildNameLabel.place(relx=.5, rely=.45, anchor='center')
+            buildListBox.place(relx=.5, rely=.2, anchor='center')
+            buildScrollbar.place(relx=.575, rely=.2, anchor='center')
+    
+            buildTree = ttk.Treeview(viewBuildsWindow, selectmode = 'browse')
+            buildTreeScrollbar = tk.Scrollbar(viewBuildsWindow, orient='vertical', command = buildTree.yview)
+            
+            buildTree.place(relx=.5, rely=.7, anchor = 'center')
+            buildTreeScrollbar.place(relx=.85, rely=.7, anchor = 'center')
+            
+            buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
+            buildTree["columns"] = ("1", "2", "3", "4")
+            buildTree['show'] = 'headings' 
+            buildTree.column("1", width = 100, anchor = 'w')
+            buildTree.column("2", width = 200, anchor = 'w')
+            buildTree.column("3", width = 60, anchor = 'w')
+            buildTree.column("4", width = 150, anchor = 'w')
+            buildTree.heading("1", text = "Manufacturer #")
+            buildTree.heading("2", text = "Description")
+            buildTree.heading("3", text = "Quantity")
+            buildTree.heading("4", text = "Time added")
+            for rec in selectedBuildRecords:    
+                fillBuildTree(rec)
+        return
+    
+    buildListBox = tk.Listbox(viewBuildsWindow, width=20, height=10, selectmode = 'single')
     buildScrollbar = tk.Scrollbar(viewBuildsWindow)
     
-    buildListBox.place(relx=.5, rely=.5, anchor='center')
-    buildScrollbar.place(relx=.79, rely=.5, anchor='center')
+    buildListBox.place(relx=.5, rely=.35, anchor='center')
+    buildScrollbar.place(relx=.675, rely=.35, anchor='center')
     
     sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
     cur.execute(sql)
@@ -918,7 +957,8 @@ def viewBuilds():
     if(buildNameRecords):
         for i in range(len(buildNameRecords)):
             buildListBox.insert(i, buildNameRecords[i][0])
-    
+    buildListBox.bind('<<ListboxSelect>>', buildSelection)
+    viewBuildsWindow.mainloop()
     return
 
 def userMenu():
@@ -1365,8 +1405,8 @@ def checkOut():
     checkOutTree.heading("2", text = "Description")
     checkOutTree.heading("3", text = "Barcode")
     checkOutTree.heading("4", text = "Quantity")
-    
     checkOutWindow.mainloop()
+    
     return
 
 def generateBarcode(barcodeEntry, checkDigitLabel):

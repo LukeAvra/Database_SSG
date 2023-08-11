@@ -96,11 +96,45 @@ def printBarcode():
     
     return
 
+def printOther(imageLocation):
+    # Grab the model name, could really just type this out
+    modelList = [m for m in models]
+    
+    # Might want to itemize backend and printer variables for easy adjustment to USB printing
+    backend = 'network'
+    model = modelList[11]
+    printer = 'tcp://192.168.56.32'
+    printImage = Image.open(imageLocation)
+    printImage = printImage.resize((696, 300))
+    
+    instructions = convert(
+        qlr = BrotherQLRaster(model),
+        images = [printImage],
+        label = "62",
+        rotate='0',
+        threshold=75.0,
+        dither=False,
+        compress=False,
+        red=False,
+        dpi_600=False,
+        hq=True,
+        cut=True  
+        )
+    send(instructions=instructions, printer_identifier=printer, backend_identifier=backend, blocking=True)
+    return
+
 def main():
     # Text that appears above barcode on label
-    text = "Special Services Group"
-    createBarcodeImage(text, "329018288409")
-    printBarcode()
+# =============================================================================
+#     text = "Special Services Group"
+#     createBarcodeImage(text, "329018288409")
+#     printBarcode()
+# =============================================================================
+    base = "C:\\Users\\Luke\\Desktop\\Numbers"
+
+    numberToPrint = base + "\\1.png"
+    printOther(numberToPrint)
+
     return
 
 if __name__ == "__main__":
