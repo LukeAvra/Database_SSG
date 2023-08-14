@@ -180,7 +180,7 @@ def addItemGUI():
         if(rackEntry.get() == ""):
             newRack = None
         else:
-            newRack = rackEntry.get()
+            newRack = ord(rackEntry.get().lower())
         
         if(shelfEntry.get() == ""):
             newShelf = None
@@ -193,7 +193,14 @@ def addItemGUI():
             newShelfLocation = shelfLocationEntry.get()
             
         # Uncomment this when ready to use the Brother printer for all labels
-        PL.createBarcodeImage(newManID, newBarcode)
+        labelText = newManID.lower()
+        if(roomEntry.get() != ''):
+            labelText = labelText + ' ' + roomEntry.get()
+            if(rackEntry.get() != ''):
+                labelText = labelText + ' ' + rackEntry.get().upper()
+            if(shelfEntry.get() != ''):
+                labelText = labelText + '-' + shelfEntry.get()
+        PL.createBarcodeImage(labelText, newBarcode)
         PL.printBarcode()
             
         # Check if Barcode is already in system, do extraneous checks, adding items doesn't have to be blazing fast
@@ -343,7 +350,14 @@ def adjustItemGUI(item_for_adjustment):
     adjustItemWindow.title('Adjust Item')
     
     def printCode():
-        PL.createBarcodeImage(manIDEntry.get().lower(), BarcodeEntry.get())
+        labelText = manIDEntry.get().lower()
+        if(roomEntry.get() != ''):
+            labelText = labelText + ' ' + roomEntry.get()
+            if(rackEntry.get() != ''):
+                labelText = labelText + ' ' + rackEntry.get().upper()
+            if(shelfEntry.get() != ''):
+                labelText = labelText + '-' + shelfEntry.get()
+        PL.createBarcodeImage(labelText, BarcodeEntry.get())
         PL.printBarcode()
         return
     
@@ -367,8 +381,10 @@ def adjustItemGUI(item_for_adjustment):
         adjustedroom = roomEntry.get()
         if(rackEntry.get() == ""):
             adjustedrack = None
+        elif(len(rackEntry.get()) > 1):
+            tk.messagebox.showerror("Error", "Please enter a single character rack identifier (A-Z)")
         else:
-            adjustedrack = rackEntry.get()
+            adjustedrack = ord(str(rackEntry.get()).lower())
             
         if(shelfEntry.get() == ""):
             adjustedshelf = None
@@ -504,7 +520,7 @@ def adjustItemGUI(item_for_adjustment):
     if(locRecords[0][0]):
         roomEntry.insert(0, locRecords[0][0])
     if(locRecords[0][1]):
-        rackEntry.insert(0, locRecords[0][1])
+        rackEntry.insert(0, chr(locRecords[0][1]))
     if(locRecords[0][2]):
         shelfEntry.insert(0, locRecords[0][2])
     if(locRecords[0][3]):
@@ -906,6 +922,24 @@ def viewBuilds():
     viewBuildsWindow.geometry("300x300")
     viewBuildsWindow.focus_force()
     cur = DG.conn.cursor()
+    searchBuild = tk.StringVar()
+    searchLabel = tk.Label(viewBuildsWindow, text = "Search: ")
+    searchEntry = tk.Entry(viewBuildsWindow, textvariable=searchBuild)
+    buildListBox = tk.Listbox(viewBuildsWindow, width=30, height=8, selectmode = 'single')
+    buildScrollbar = tk.Scrollbar(viewBuildsWindow)
+    homeButton = tk.Button(viewBuildsWindow, text = "Home", command = lambda : [viewBuildsWindow.destroy(), mainMenu()])
+    
+    def buildSearch(*args):
+        searchItem = '%' + searchBuild.get() + '%'
+        buildListBox.delete(0, tk.END)
+        sql = '''SELECT * FROM ''' + DG.buildDatabase + ''' WHERE build_name ILIKE %s'''
+        cur.execute(sql, [searchItem])
+        buildRecords = cur.fetchall()
+        for i in range(len(buildRecords)):
+            buildListBox.insert(i, buildRecords[i][0])
+        return
+    
+    searchBuild.trace_add('write', buildSearch)
     
     def buildSelection(event):
         tableName = buildListBox.get(buildListBox.curselection())
@@ -916,19 +950,33 @@ def viewBuilds():
             def fillBuildTree(rec):
                 buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
                 return
+            def printHelper():
+                sql = '''SELECT barcode FROM ''' + DG.buildDatabase + ''' WHERE build_name = %s;'''
+                cur.execute(sql, [tableName])
+                barRecords = cur.fetchall()
+                barcode = barRecords[0][0]
+                PL.createBarcodeImage(tableName.upper(), barcode)
+                PL.printBarcode()
+                return
             
             viewBuildsWindow.geometry("700x500")
             buildNameLabel = tk.Label(viewBuildsWindow, text = tableName, font=('calibre', 12, 'bold'))
             
-            buildNameLabel.place(relx=.5, rely=.45, anchor='center')
-            buildListBox.place(relx=.5, rely=.2, anchor='center')
-            buildScrollbar.place(relx=.575, rely=.2, anchor='center')
+            printCodeButton = tk.Button(viewBuildsWindow, text = "Print Barcode", command = printHelper)
+            
+            searchLabel.place(relx=.4, rely=.08, anchor = 'center')
+            searchEntry.place(relx=.52, rely=.08, anchor='center')
+            buildNameLabel.place(relx=.5, rely=.43, anchor='center')
+            buildListBox.place(relx=.5, rely=.255, anchor='center')
+            buildScrollbar.place(relx=.615, rely=.255, anchor='center')
+            printCodeButton.place(relx=.925, rely = .76, anchor='center')
+            homeButton.place(relx = .925, rely=.88, anchor = 'center')
     
             buildTree = ttk.Treeview(viewBuildsWindow, selectmode = 'browse')
             buildTreeScrollbar = tk.Scrollbar(viewBuildsWindow, orient='vertical', command = buildTree.yview)
             
-            buildTree.place(relx=.5, rely=.7, anchor = 'center')
-            buildTreeScrollbar.place(relx=.85, rely=.7, anchor = 'center')
+            buildTree.place(relx=.5, rely=.68, anchor = 'center')
+            buildTreeScrollbar.place(relx=.835, rely=.68, anchor = 'center')
             
             buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
             buildTree["columns"] = ("1", "2", "3", "4")
@@ -936,7 +984,7 @@ def viewBuilds():
             buildTree.column("1", width = 100, anchor = 'w')
             buildTree.column("2", width = 200, anchor = 'w')
             buildTree.column("3", width = 60, anchor = 'w')
-            buildTree.column("4", width = 150, anchor = 'w')
+            buildTree.column("4", width = 130, anchor = 'w')
             buildTree.heading("1", text = "Manufacturer #")
             buildTree.heading("2", text = "Description")
             buildTree.heading("3", text = "Quantity")
@@ -945,11 +993,11 @@ def viewBuilds():
                 fillBuildTree(rec)
         return
     
-    buildListBox = tk.Listbox(viewBuildsWindow, width=20, height=10, selectmode = 'single')
-    buildScrollbar = tk.Scrollbar(viewBuildsWindow)
-    
-    buildListBox.place(relx=.5, rely=.35, anchor='center')
-    buildScrollbar.place(relx=.675, rely=.35, anchor='center')
+    searchLabel.place(relx=.3, rely=.2, anchor = 'center')
+    searchEntry.place(relx=.6, rely=.2, anchor='center')
+    buildListBox.place(relx=.5, rely=.5, anchor='center')
+    buildScrollbar.place(relx=.78, rely=.5, anchor='center')
+    homeButton.place(relx = .8, rely=.8, anchor = 'center')
     
     sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
     cur.execute(sql)
@@ -1311,7 +1359,7 @@ def checkOut():
                     newBuildWindow.destroy()
                     infoMessage = tableName + " Created succesfully"
                     tk.messagebox.showinfo("Success", infoMessage)
-                    PL.createBarcodeImage(tableName, bar)
+                    PL.createBarcodeImage(tableName.upper(), bar)
                     PL.printBarcode()
                     finalizeCheckout(bar)
                 return

@@ -22,8 +22,10 @@ def insertion(sqlFile, database):
     cur.execute(sql)
     records = cur.fetchall()
     for rec in records:
-        sqlFile.write("INSERT INTO " + database + " VALUES (" + str(rec) + ");\n")
-        
+        if len(rec) > 1:
+            sqlFile.write("INSERT INTO " + database + " VALUES " + str(rec) + ";\n")
+        else:
+            sqlFile.write("INSERT INTO " + database + " VALUES " + str(rec).replace(',', '') + ";\n")
     return
 
 

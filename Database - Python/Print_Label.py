@@ -82,7 +82,7 @@ def printBarcode():
         images = [im],
         label = "62",
         rotate='0',
-        threshold=95.0,
+        threshold=85.0,
         dither=False,
         compress=False,
         red=False,
@@ -112,7 +112,7 @@ def printOther(imageLocation):
         images = [printImage],
         label = "62",
         rotate='0',
-        threshold=75.0,
+        threshold=35.0,
         dither=False,
         compress=False,
         red=False,
@@ -123,6 +123,17 @@ def printOther(imageLocation):
     send(instructions=instructions, printer_identifier=printer, backend_identifier=backend, blocking=True)
     return
 
+def arguments():
+    args = []
+    numArgs = len(sys.argv)
+    if(numArgs > 1):
+        for i in range(1, numArgs):
+            args.append(sys.argv[i])
+        return args
+    else:
+        return
+    
+
 def main():
     # Text that appears above barcode on label
 # =============================================================================
@@ -130,10 +141,34 @@ def main():
 #     createBarcodeImage(text, "329018288409")
 #     printBarcode()
 # =============================================================================
-    base = "C:\\Users\\Luke\\Desktop\\Numbers"
 
-    numberToPrint = base + "\\1.png"
-    printOther(numberToPrint)
+
+# =============================================================================
+#     base = "C:\\Users\\Luke\\Desktop\\Numbers"
+#     numberToPrint = base + "\\1.png"
+#     printOther(numberToPrint)
+# =============================================================================
+
+
+    if(arguments()):
+        args = arguments()
+        for i in args:
+            if(i.strip(',').isalpha()):
+                base = "C:\\Users\\Luke\\Desktop\\Letters"
+            else:
+                base = "C:\\Users\\Luke\\Desktop\\Numbers"
+            toPrint = base + "\\" + i.strip(',') + ".png"
+            printOther(toPrint)
+# =============================================================================
+#             num = len(str(i.strip(',')))
+#             if(num > 3):
+#                 print("Error, only three characters available at the moment")
+#             else:
+#                 print("num < 3")    
+# =============================================================================
+    else:
+        print("False")
+        printOther("C:\\Users\\Luke\\Documents\\Personal\\Other\\Of_Course1.png")
 
     return
 

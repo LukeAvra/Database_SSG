@@ -8,9 +8,39 @@ Functions for inputing database data from excel spreadsheets
 
 """
 import pandas as pd
+import random
 import sys, os
 sys.path.append(os.path.dirname(__file__))
 import Database_Globals as DG
+
+def generateBarcode():
+    cur = DG.conn.cursor()
+    barcodeList = []
+    barcodeString = ''
+    odds = 0
+    for i in range(0, 11):
+        barcodeList.append(random.randrange(0, 10))
+    for i in range(0, 11, 2):
+        odds = odds + barcodeList[i]
+    odds = odds * 3
+    for i in range(1, 10, 2):
+        odds = odds + barcodeList[i]            
+    if(odds % 10 != 0):
+        checkDigit = 10 - odds % 10
+    else:
+        checkDigit = 0
+        
+    for num in barcodeList:
+        barcodeString += str(num)
+    sqlCheck = barcodeString + str(checkDigit)        
+    sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code=%s'''
+    cur.execute(sql, [sqlCheck])
+    records = cur.fetchone()
+    if records:
+        generateBarcode()
+        return
+    else:    
+        return sqlCheck, barcodeString, str(checkDigit)
 
 def importExcel(path, sheets):
     cur = DG.conn.cursor()
@@ -18,9 +48,6 @@ def importExcel(path, sheets):
     
     # Unused as far as I can tell but keeping it here just in case
     #dfByBox = pd.read_excel(path, sheet_name=sheets[1])
-    
-    inDB, outDB = [], []
-    
     count = 0
     countOut = 0
     for i in range(len(dfFullList)):
@@ -33,7 +60,7 @@ def importExcel(path, sheets):
                 count = count + 1
             else:
                 # Converting Counts to integers for input
-                if(str(dfFullList['New Count'][i]) == 'nan' or not str(dfFullList['New Count'][i]).isdigit()):
+                if(str(dfFullList['New Count'][i]) == 'nan' or not str(dfFullList['New Count'][i]).isdigit() or str(dfFullList['New Count'][i]) == '0'):
                     quantity = None
                 else:
                     quantity = int(dfFullList['New Count'][i])
@@ -45,26 +72,50 @@ def importExcel(path, sheets):
                 manNumber = str(dfFullList['Part Number'][i]).lower()
                 
                 countOut = countOut + 1
-                print("Man #: %25s   Count: %5s      Desc: %40s" % (manNumber, quantity, desc))
-                
-                
-                
-                ##
-                ## Whenever you're ready, these two lines will put it all into the database. I fucking hope.
-                ##
-# =============================================================================
-#                 sql = '''INSERT INTO ''' + DG.invDatabase + ''' (manufacturerid, quantity, description) VALUES (%s, %s, %s);'''
-#                 cur.execute(sql, [manNumber, quantity, desc])
-# =============================================================================
-                
+                fullBar, bar, checkDigit = generateBarcode()
+                print("Man #: %25s   Count: %5s      Barcode: %12s       Desc: %40s" % (manNumber, quantity, fullBar, desc))
                 
 
+                ## Testing SQL inputs
+                
+# =============================================================================
+#                 sql = '''INSERT INTO testinput (manufacturerid, quantity, description, barcode) VALUES (%s, %s, %s, %s);
+#                         INSERT INTO testlocations(barcode) VALUES (%s);
+#                         INSERT INTO testbarcodes (code) VALUES (%s);'''
+#                 cur.execute(sql, [manNumber, quantity, desc, fullBar, fullBar, fullBar])
+# =============================================================================
+                sql = '''INSERT INTO ''' + DG.invDatabase + ''' (manufacturerid, quantity, description, barcode) VALUES (%s, %s, %s, %s);
+                        INSERT INTO ''' + DG.locDatabase + '''(barcode) VALUES (%s);
+                        INSERT INTO ''' + DG.barDatabase + '''(code) VALUES (%s);'''
+                cur.execute(sql, [manNumber, quantity, desc, fullBar, fullBar, fullBar])
+
+
+                
+def barCheck():
+    cur = DG.conn.cursor()
+    barcodes, invCodes = [], []
+    sql = '''SELECT barcode FROM ssg_inventory;'''
+    cur.execute(sql)
+    invBarRecords = cur.fetchall()
+    for rec in invBarRecords:
+        invCodes.append(rec[0])
+    sql = '''SELECT code FROM barcodes;'''
+    cur.execute(sql)
+    barRecords = cur.fetchall()
+    for rec in barRecords:
+        barcodes.append(rec[0])
+    
+    for i in barcodes:
+        if i not in invCodes:
+            print(i)
+    return
 
 def main():
     DG.main()
     path = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Production - Documents\\Inventory\\Cascade Inventory.xlsx"
     sheets = ['List', 'By Box']
     importExcel(path, sheets) 
+    #barCheck()
     DG.close()    
     return
 
