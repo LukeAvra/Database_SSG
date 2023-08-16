@@ -1462,7 +1462,7 @@ def checkOut():
     return
 
 def inventoryBackup():
-    #ADDING CHANGES SO GITHUB WILL QUIT BITCHING
+    #ADDING CHANGES SO GITHUB WILL QUIT GODDAMN BITCHING
     return
 
 def adminMenu():
