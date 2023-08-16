@@ -1,14 +1,27 @@
-For implementation of excel spreadsheet:
-	By Box Sheet:	
-		On the By Box sheet, why are there two separate quantity columns? 
-			For Box 1, the second quant column is marked 'unit cost' but holds identical values to the first quant column
-		Why are some items marked red?
-	List Sheet:
-		Location column. What's going on there exactly?
-		Quantity, Quantity Used, Remaining and New Count?
-		Why are some items marked red?
-		
+autopytoexe:
+
+Files:
+	C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/config.py
+	C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database.ini
+	C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database_Globals.py
+	C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Print_Label.py
+	C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/ttk.py
+Folders:
+	C:/Users/Luke/anaconda3/Lib/site-packages/treepoem
+	C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Barcodes
 	
-Part Number			-	Manufacturer Number
-Alternate Number	-	Supplier Number?
-Quantity Used, 
+Paths:
+	C:/Users/Luke/anaconda3/Library/bin
+
+Hidden Import:
+	tkinter
+	treepoem
+	configparser
+	PIL
+	brother_ql
+	psycopg2
+	brother_ql.backends.helpers
+	
+Full command:
+
+pyinstaller --noconfirm --onedir --console --hidden-import "tkinter" --hidden-import "treepoem" --hidden-import "configparser" --add-data "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/config.py;." --add-data "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database.ini;." --add-data "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database_Globals.py;." --add-data "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Print_Label.py;." --add-data "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/ttk.py;." --add-data "C:/Users/Luke/anaconda3/Lib/site-packages/treepoem;treepoem/" --paths "C:/Users/Luke/anaconda3/Library/bin" --hidden-import "PIL" --hidden-import "brother_ql" --hidden-import "psycopg2" --add-data "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Barcodes;Barcodes/" --hidden-import "brother_ql.backends.helpers"  "C:/Users/Luke/Documents/Python Scripts/Database_SSG/Database - Python/Database_GUI.py"

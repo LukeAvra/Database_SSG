@@ -56,6 +56,9 @@ def roomList():
     return rooms
 
 def searchID(ID):
+    
+    # Too tired to look into this now but why is invDatabase called twice? Can't it just be called once and, 
+    # if the records exist, just call the locDatabase using records[0][5] or whichever one 'barcode' is??
     cur = conn.cursor()
     sql = '''SELECT Barcode FROM ''' + invDatabase + '''
             WHERE ManufacturerID = %s'''
@@ -102,7 +105,7 @@ def searchTotal(ID, version):
 def searchByName(searchItem):
     cur = conn.cursor()
     userInputItem = '%' + searchItem + '%'
-    sql = '''SELECT DISTINCT Description FROM ''' + invDatabase + ''' WHERE Description ILIKE %s'''
+    sql = '''SELECT DISTINCT Description FROM ''' + invDatabase + ''' WHERE Description ILIKE %s order by Description'''
     cur.execute(sql, [userInputItem])
     records = cur.fetchall()
     return records
