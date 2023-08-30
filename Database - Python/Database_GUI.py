@@ -10,111 +10,18 @@ sys.path.append(os.path.dirname(__file__))
 sys.setrecursionlimit(5000)
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import filedialog
 import ttk
 from datetime import datetime
 import Database_Globals as DG
 import Print_Label as PL
+import psqlBackupScript as BU
 import random
 import bcrypt
 
-
-# =============================================================================
-# def searchGUI(field):
-#     cur = DG.conn.cursor()
-#     if(searchType.get() == 'Barcode'):
-#         bar = searchVar.get()
-#         sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
-#         cur.execute(sql, [bar])
-#         records = cur.fetchall()
-#         if(not records):
-#             tk.messagebox.showerror("Error", 'Item not found')
-#             field.delete(0, tk.END)
-#         else:
-#             sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
-#             cur.execute(sql, [records[0][0]])
-#             records = cur.fetchall()
-#             mainMenuWindow.destroy()
-#             adjustItemGUI(records[0][0])
-#         return
-#         
-#     # Currently pulling full inventory and location records but just calling adjust item with the manufacturer ID
-#     elif(searchType.get() == 'Manufacturer Number'):
-#         invRecords, locRecords = DG.searchID(searchVar.get().lower())
-#         if(invRecords == None or locRecords == None):
-#             tk.messagebox.showerror('Search Error', "Item not found in inventory")
-#             field.delete(0, tk.END)
-#             return
-#         else:
-#             mainMenuWindow.destroy()
-#             adjustItemGUI(invRecords[0][0])            
-#     elif(searchType.get() == 'Item Name'):
-#         records = DG.searchByName(searchVar.get())
-#         if(records):
-#             mainMenuWindow.destroy()
-#             searchWindow = tk.Tk()
-#             searchWindow.title("Search Results")
-#             searchWindow.geometry("400x500")
-#             searchItem = tk.StringVar(searchWindow, searchVar.get())
-#             
-#             def nameSearch(*args):
-#                 def adjustItemHelper():
-#                     selectedItem = invListbox.get(invListbox.curselection())
-#                     sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Description=%s;'''
-#                     cur.execute(sql, [selectedItem])
-#                     ID_for_adjustment = cur.fetchall()
-#                     searchWindow.destroy()
-#                     adjustItemGUI(ID_for_adjustment[0][0])
-#                     return
-#                 
-#                 records = DG.searchByName(searchItem.get())
-#                 invLabel = tk.Label(searchWindow, text='Similar items found\nSelect item to adjust or click new item')
-#                 invListbox = tk.Listbox(searchWindow, width=40, height=15, selectmode = 'single')
-#                 invScrollbar = tk.Scrollbar(searchWindow)
-#                 #selectedItem = invListbox.curselection()
-#                 adjustItemButton = tk.Button(searchWindow, text='Adjust Item', command = adjustItemHelper)
-#                 homeButton = tk.Button(searchWindow, text = 'Home', command = lambda:[searchWindow.destroy(), mainMenu()])
-#                 
-#                 invLabel.place(relx=.5, rely=.12, anchor='center')
-#                 invListbox.place(relx=.5, rely=.5, anchor='center')
-#                 invScrollbar.place(relx=.79, rely=.5, anchor='center')
-#                 adjustItemButton.place(relx=.5, rely=.83, anchor='center')
-#                 homeButton.place(relx=.5, rely=.9, anchor='center')
-#                 
-#                 invListbox.config(yscrollcommand = invScrollbar.set)
-#                 invScrollbar.config(command = invListbox.yview)
-#                 
-#                 for i in range(len(records)):
-#                     invListbox.insert(i, records[i][0])
-#                 return
-#             
-#             searchItem.trace_add('write', nameSearch)
-#             searchEntry = tk.Entry(searchWindow, textvariable=searchItem)
-#             searchEntry.place(relx=.5, rely=.2, anchor = 'center')
-#             searchEntry.focus_force()
-#             searchEntry.delete(0, tk.END)
-#             searchEntry.insert(0, searchVar.get())
-#             nameSearch()
-#             searchWindow.mainloop()
-#             return
-#             
-#         else:
-#             tk.messagebox.showerror("Error", "Nothing found with that name")
-#             field.delete(0, tk.END)
-#             
-#     else:
-#         print("I have no idea how you managed to do that")
-#         print(searchType.get())
-#         field.delete(0, tk.END)
-#     return
-#     
-#     if(searchVar.get() == ""):
-#         mainMenu()      
-#     return
-# =============================================================================
-
 def addItemGUI():
     newItemWindow = tk.Tk()
-    newItemWindow.geometry("600x600")
+    newItemWindow.geometry("550x500")
     newItemWindow.title('New Item')
     cur = DG.conn.cursor()        
         
@@ -184,7 +91,7 @@ def addItemGUI():
         if(rackEntry.get() == ""):
             newRack = None
         else:
-            newRack = ord(rackEntry.get().lower())
+            newRack = ord(rackEntry.get().upper())
         
         if(shelfEntry.get() == ""):
             newShelf = None
@@ -297,41 +204,41 @@ def addItemGUI():
     SupplierNameLabel.place(relx=.05, rely=.25, anchor='w')
     SupplierNameEntry.place(relx=.6, rely=.25, anchor='center')
     
-    DescriptionLabel.place(relx=.05, rely=.325, anchor='w')
-    DescriptionEntry.place(relx=.6, rely=.35, anchor='center')
+    DescriptionLabel.place(relx=.05, rely=.3, anchor='w')
+    DescriptionEntry.place(relx=.6, rely=.325, anchor='center')
     
-    QuantityLabel.place(relx=.05, rely=.45, anchor='w')
-    QuantityEntry.place(relx=.6, rely=.45, anchor='center')
+    QuantityLabel.place(relx=.05, rely=.425, anchor='w')
+    QuantityEntry.place(relx=.6, rely=.425, anchor='center')
     
-    BarcodeLabel.place(relx=.05, rely=.5, anchor='w')
-    BarcodeEntry.place(relx=.6, rely=.5, anchor='center')
+    BarcodeLabel.place(relx=.05, rely=.475, anchor='w')
+    BarcodeEntry.place(relx=.6, rely=.475, anchor='center')
     
-    roomLabel.place(relx=.05, rely=.55, anchor='w')
-    roomEntry.place(relx=.6, rely=.55, anchor='center')
+    roomLabel.place(relx=.05, rely=.525, anchor='w')
+    roomEntry.place(relx=.6, rely=.525, anchor='center')
     
-    rackLabel.place(relx=.05, rely=.6, anchor='w')
-    rackEntry.place(relx=.6, rely=.6, anchor='center')
+    rackLabel.place(relx=.05, rely=.575, anchor='w')
+    rackEntry.place(relx=.6, rely=.575, anchor='center')
     
-    shelfLabel.place(relx=.05, rely=.65, anchor='w')
-    shelfEntry.place(relx=.6, rely=.65, anchor='center')
+    shelfLabel.place(relx=.05, rely=.625, anchor='w')
+    shelfEntry.place(relx=.6, rely=.625, anchor='center')
     
-    shelfLocationLabel.place(relx=.05, rely=.7, anchor='w')
-    shelfLocationEntry.place(relx=.6, rely=.7, anchor='center')
+    shelfLocationLabel.place(relx=.05, rely=.675, anchor='w')
+    shelfLocationEntry.place(relx=.6, rely=.675, anchor='center')
     
     manIDEntry.focus_force()
     manIDEntry.bind("<FocusOut>", dataCheck)
-    createButton = tk.Button(newItemWindow, text = 'Add', command = newItem)
-    createButton.place(relx=.5, rely = .775, anchor='center')
+    createButton = tk.Button(newItemWindow, text = 'Add Item', command = newItem)
+    createButton.place(relx=.5, rely = .8, anchor='center')
     
     returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), mainMenu()])
-    returnButton.place(relx=.85, rely=.85, anchor='center')
+    returnButton.place(relx=.5, rely=.9, anchor='center')
     
     barcodeGeneratorButton = tk.Button(newItemWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel), pullBarcode(BarcodeEntry)])
-    barcodeGeneratorButton.place(relx=.5, rely=.92, anchor='center')
+    barcodeGeneratorButton.place(relx=.9, rely=.5, anchor='center')
     barcodeEntry = tk.Entry(newItemWindow, font=('calibre', 12))
-    barcodeEntry.place(relx=.5, rely=.85, anchor = 'center')
+    #barcodeEntry.place(relx=.5, rely=.85, anchor = 'center')
     checkDigitLabel = tk.Label(newItemWindow, text = '', font=('calibre', 12))
-    checkDigitLabel.place(relx=.7, rely=.85, anchor = 'center')
+    #checkDigitLabel.place(relx=.7, rely=.85, anchor = 'center')
     
     # Fill in the barcode entry automatically on window creation
     generateBarcode(barcodeEntry, checkDigitLabel)
@@ -387,8 +294,9 @@ def adjustItemGUI(item_for_adjustment):
             adjustedrack = None
         elif(len(rackEntry.get()) > 1):
             tk.messagebox.showerror("Error", "Please enter a single character rack identifier (A-Z)")
+            return
         else:
-            adjustedrack = ord(str(rackEntry.get()).lower())
+            adjustedrack = ord(str(rackEntry.get()).upper())
             
         if(shelfEntry.get() == ""):
             adjustedshelf = None
@@ -920,6 +828,9 @@ def createBOMGUI():
     bomWindow.mainloop()
     return
 
+
+# Need to adjust placements when page size changes
+#
 def viewBuilds():
     viewBuildsWindow = tk.Tk()
     viewBuildsWindow.title("Builds/RMAs")
@@ -947,7 +858,7 @@ def viewBuilds():
     
     def buildSelection(event):
         tableName = buildListBox.get(buildListBox.curselection())
-        sql = '''SELECT * FROM ''' + tableName + ''';'''
+        sql = '''SELECT * FROM ''' + tableName + ''' ORDER BY timeadded;'''
         cur.execute(sql)
         selectedBuildRecords = cur.fetchall()
         if(selectedBuildRecords):
@@ -963,24 +874,25 @@ def viewBuilds():
                 PL.printBarcode()
                 return
             
-            viewBuildsWindow.geometry("700x500")
+            viewBuildsWindow.geometry("800x300")
             buildNameLabel = tk.Label(viewBuildsWindow, text = tableName, font=('calibre', 12, 'bold'))
             
             printCodeButton = tk.Button(viewBuildsWindow, text = "Print Barcode", command = printHelper)
             
-            searchLabel.place(relx=.4, rely=.08, anchor = 'center')
-            searchEntry.place(relx=.52, rely=.08, anchor='center')
-            buildNameLabel.place(relx=.5, rely=.43, anchor='center')
-            buildListBox.place(relx=.5, rely=.255, anchor='center')
-            buildScrollbar.place(relx=.615, rely=.255, anchor='center')
-            printCodeButton.place(relx=.925, rely = .76, anchor='center')
-            homeButton.place(relx = .925, rely=.88, anchor = 'center')
+
+            searchLabel.place(relx=.056, rely=.2, anchor = 'w')
+            searchEntry.place(relx=.131, rely=.2, anchor='w')
+            buildNameLabel.place(relx=.65, rely=.06, anchor='center')
+            buildListBox.place(relx=.075, rely=.5, anchor='w')
+            buildScrollbar.place(relx=.283, rely=.5, anchor='w')
+            printCodeButton.place(relx=.8, rely = .92, anchor='center')
+            homeButton.place(relx = .925, rely=.92, anchor = 'center')
     
             buildTree = ttk.Treeview(viewBuildsWindow, selectmode = 'browse')
             buildTreeScrollbar = tk.Scrollbar(viewBuildsWindow, orient='vertical', command = buildTree.yview)
             
-            buildTree.place(relx=.5, rely=.68, anchor = 'center')
-            buildTreeScrollbar.place(relx=.835, rely=.68, anchor = 'center')
+            buildTree.place(relx=.65, rely=.475, anchor = 'center')
+            buildTreeScrollbar.place(relx=.945, rely=.475, anchor = 'center')
             
             buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
             buildTree["columns"] = ("1", "2", "3", "4")
@@ -997,11 +909,11 @@ def viewBuilds():
                 fillBuildTree(rec)
         return
     
-    searchLabel.place(relx=.3, rely=.2, anchor = 'center')
-    searchEntry.place(relx=.6, rely=.2, anchor='center')
-    buildListBox.place(relx=.5, rely=.5, anchor='center')
-    buildScrollbar.place(relx=.78, rely=.5, anchor='center')
-    homeButton.place(relx = .8, rely=.8, anchor = 'center')
+    searchLabel.place(relx=.15, rely=.2, anchor = 'w')
+    searchEntry.place(relx=.35, rely=.2, anchor='w')
+    buildListBox.place(relx=.2, rely=.5, anchor='w')
+    buildScrollbar.place(relx=.753, rely=.5, anchor='w')
+    homeButton.place(relx = .7, rely=.85, anchor = 'w')
     
     sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
     cur.execute(sql)
@@ -1345,6 +1257,8 @@ def checkOut():
                     tk.messagebox.showerror("Error", "Build already exists in database")
                     newBuildWindow.destroy()
                 else:
+                    sql = '''INSERT INTO ''' + DG.barDatabase + '''(code) VALUES (%s);'''
+                    cur.execute(sql, [bar])
                     sql = '''INSERT INTO ''' + DG.buildDatabase + ''' (build_name, barcode) VALUES (%s, %s);'''
                     cur.execute(sql, [tableName.lower(), bar])
                     
@@ -1462,8 +1376,46 @@ def checkOut():
     return
 
 def inventoryBackup():
-    #ADDING CHANGES SO GITHUB WILL QUIT GODDAMN BITCHING
+    tk.messagebox.showinfo("Alert", "Will create folders for year and month within selected directory.")
+    saveFolder = filedialog.askdirectory()
+    print(saveFolder)
+    BU.createFile(saveFolder)
+    messageDialog = "Database successfully backed up to:\n" + saveFolder
+    tk.messagebox.showinfo("Success", messageDialog)
     return
+
+
+def adminBuildMenu():
+    cur = DG.conn.cursor()
+    adminBuildMenuWindow = tk.Tk()
+    adminBuildMenuWindow.geometry("400x200")
+    adminBuildMenuWindow.title("Build Menu (Admin)")
+    adminBuildMenuWindow.focus_force()
+    
+    def buildSelectionAdmin(*args):
+        #adminBuildMenuWindow.destroy()
+        adminBuildMenu = tk.Tk()
+        adminBuildMenu.geometry("400x400")
+        buildName = buildListBox.get(buildListBox.curselection())
+        adminBuildMenu.title(buildName)
+        adminBuildMenu.focus_force()
+        
+        
+        
+        return
+
+    buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
+    sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
+    cur.execute(sql)
+    buildNameRecords = cur.fetchall()
+    if(buildNameRecords):
+        for i in range(len(buildNameRecords)):
+            buildListBox.insert(i, buildNameRecords[i][0])
+            
+    buildListBox.place(relx=.5, rely=.4, anchor='center')
+            
+    buildListBox.bind('<Double-1>', buildSelectionAdmin)
+    
 
 def adminMenu():
     adminMenuWindow = tk.Tk()
@@ -1471,13 +1423,17 @@ def adminMenu():
     adminMenuWindow.geometry("600x400")
     adminMenuWindow.focus_force()
     
-    backupButton = tk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
-    removeButton = tk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
-    bomButton = tk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
+    backupButton = ttk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
+    removeButton = ttk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
+    bomButton = ttk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
+    buildButton = ttk.Button(adminMenuWindow, text = "Builds", command = lambda: [adminMenuWindow.destroy(), adminBuildMenu()])
+    homeButton = ttk.Button(adminMenuWindow, text = "Home", command = lambda:[adminMenuWindow.destroy(), mainMenu()])
     
     backupButton.place(relx=.5, rely=.4, anchor='center')
     removeButton.place(relx=.5, rely=.5, anchor='center')
     bomButton.place(relx=.5, rely=.6, anchor='center')
+    buildButton.place(relx=.5, rely=.7, anchor='center')
+    homeButton.place(relx=.75, rely=.85, anchor='center')
     
     
     return
@@ -1556,13 +1512,17 @@ def mainMenu():
     mainMenuWindow = tk.Tk()
     mainMenuWindow.geometry("600x200")
     mainMenuWindow.title("Main Menu")
+    ttk.Style().configure("TButton", background="#ccc")
+
     searchVar = tk.StringVar()
     searchType = tk.StringVar()
     mainMenuWindow.focus_force()
+    
     # When SQL server is connected, use this instead of dummy list below
     choiceList = ['Barcode', 'Manufacturer Number', 'Item Name']
     
     searchChoiceBox = ttk.Combobox(
+                        mainMenuWindow,
                         state='readonly',
                         values = choiceList,
                         textvariable=searchType
@@ -1582,15 +1542,18 @@ def mainMenu():
             return
         cur.execute(sql, [searchItem])
         records = cur.fetchall()
-        for i in range(len(records)):
-            args[0].insert(i, records[i][recNum])
+        if(records):
+            for i in range(len(records)):
+                args[0].insert(i, records[i][recNum])
             
-        def listBoxSelection(*listBoxArgs):
-            itemIndex = args[0].curselection()[0]
-            mainMenuWindow.destroy()
-            adjustItemGUI(records[itemIndex][0])
-            return
-        args[0].bind("<Double-Button-1>", listBoxSelection)
+            def listBoxSelection(*listBoxArgs):
+                itemIndex = args[0].curselection()[0]
+                mainMenuWindow.destroy()
+                adjustItemGUI(records[itemIndex][0])
+                return
+            selectButton = tk.Button(mainMenuWindow, text = 'Select Item', command = listBoxSelection)
+            selectButton.place(relx=.9, rely=.4, anchor='center')
+            args[0].bind("<Double-Button-1>", listBoxSelection)
         return
 
     def searchHelper(*args):
@@ -1644,23 +1607,23 @@ def mainMenu():
     searchInventoryEntry = tk.Entry(mainMenuWindow, textvariable = searchVar, font=('calibre', 12))  
     searchInventoryEntry.bind('<Return>', lambda e: barcodeSearch())     
     #searchErrorLabel = tk.Label(mainMenuWindow, text='', font=('calibre', 12), fg='red')
-    searchButton = tk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
-    addItemButton = tk.Button(mainMenuWindow, text = "Add Item", command = lambda: [mainMenuWindow.destroy(), addItemGUI()])
-    #removeItemButton = tk.Button(mainMenuWindow, text = "Delete Item", command = lambda: [mainMenuWindow.destroy(), removeItem()])
-    createBomButton = tk.Button(mainMenuWindow, text = "BOMs", command = lambda: [mainMenuWindow.destroy(), createBOMGUI()])
-    buildsButton = tk.Button(mainMenuWindow, text="Builds/RMAs", command = lambda: [mainMenuWindow.destroy(), viewBuilds()])
-    checkOutButton = tk.Button(mainMenuWindow, text = 'Check Out', command = lambda:[mainMenuWindow.destroy(), checkOut()])
-    #userButton = tk.Button(mainMenuWindow, text="Users", command = lambda: [mainMenuWindow.destroy(), userMenu()])
-    #barcodeGeneratorButton = tk.Button(mainMenuWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel)])
-    barcodeEntry = tk.Entry(mainMenuWindow, font=('calibre', 12))
-    checkDigitLabel = tk.Label(mainMenuWindow, text = '', font=('calibre', 12))
-    adminButton = tk.Button(mainMenuWindow, text = 'Admin', command = adminMenuHelper)
+    searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
+    addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [mainMenuWindow.destroy(), addItemGUI()])
+    #removeItemButton = ttk.Button(mainMenuWindow, text = "Delete Item", command = lambda: [mainMenuWindow.destroy(), removeItem()])
+    #createBomButton = ttk.Button(mainMenuWindow, text = "BOMs", command = lambda: [mainMenuWindow.destroy(), createBOMGUI()])
+    buildsButton = ttk.Button(mainMenuWindow, text="Builds/RMAs", command = lambda: [mainMenuWindow.destroy(), viewBuilds()])
+    checkOutButton = ttk.Button(mainMenuWindow, text = 'Check Out', command = lambda:[mainMenuWindow.destroy(), checkOut()])
+    #userButton = ttk.Button(mainMenuWindow, text="Users", command = lambda: [mainMenuWindow.destroy(), userMenu()])
+    #barcodeGeneratorButton = ttk.Button(mainMenuWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel)])
+    #barcodeEntry = tk.Entry(mainMenuWindow, font=('calibre', 12))
+    #checkDigitLabel = tk.Label(mainMenuWindow, text = '', font=('calibre', 12))
+    adminButton = ttk.Button(mainMenuWindow, text = 'Admin', command = adminMenuHelper)
 
     # Row 1
     searchInventoryLabel.place(relx=.15, rely=.1, anchor='center')
     searchInventoryEntry.place(relx=.38, rely=.1, anchor='center')    
     searchChoiceBox.place(relx=.67, rely=.1, anchor='center')
-    searchButton.place(relx=.85, rely=.1, anchor='center')
+    searchButton.place(relx=.88, rely=.1, anchor='center')
     #searchErrorLabel.place(relx=.38, rely=.15, anchor='center')
     
     # Row 2
@@ -1675,6 +1638,7 @@ def mainMenu():
     adminButton.place(relx=.85, rely=.9, anchor = 'center')
     searchInventoryEntry.focus_force()
     mainMenuWindow.mainloop()
+    return
     
 def main():
     DG.main()

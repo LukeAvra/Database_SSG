@@ -13,8 +13,15 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 from datetime import datetime
-import time
+import shutil
 import Database_Globals as DG
+
+def accessBackup():
+    basePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra\\Access Backup"
+    dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
+    accessPath = basePath + "\\" + dt_str + ".accdb"
+    shutil.copy2('//192.168.56.105/SSGMVCDatabase/MVC Database.accdb', accessPath)
+    return
 
 def insertion(sqlFile, database):
     cur = DG.conn.cursor()
@@ -28,64 +35,55 @@ def insertion(sqlFile, database):
             sqlFile.write("INSERT INTO " + database + " VALUES " + str(rec).replace(',', '') + ";\n")
     return
 
-
-def main():
-    DG.main()
+def createFile(basePath):
+    DG.main() 
     month = datetime.now().strftime("%B")
     year= datetime.now().strftime("%Y")
     dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
     dbList = [DG.invDatabase, DG.locDatabase, DG.userDatabase, DG.bomDatabase, DG.barDatabase]
     
-    def local():
-        if(not os.path.exists(os.path.dirname(__file__) + "\\Database Backup\\" + year)):
-            os.mkdir(os.path.dirname(__file__) + "\\Database Backup\\" + year)
-        if(not os.path.exists(os.path.dirname(__file__) + "\\Database Backup\\" + year + "\\" + month)):
-            os.mkdir(os.path.dirname(__file__) + "\\Database Backup\\" + year + "\\" + month)
-            
-        filePath = os.path.dirname(__file__) + "\\Database Backup\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
-        sqlFile = open(filePath, 'w')
-        
-        for db in dbList:
-            insertion(sqlFile, db)
-            
-        return 
+    if(not os.path.exists(basePath + "\\" + year)):
+        os.mkdir(basePath + "\\" + year)
+    if(not os.path.exists(basePath + "\\" + year + "\\" + month)):
+        os.mkdir(basePath + "\\" + year + "\\" + month)
     
-    def share():
-        shareBasePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra\\Database Backup"
-        if(not os.path.exists(shareBasePath + "\\" + year)):
-            os.mkdir(shareBasePath + "\\" + year)
-        if(not os.path.exists(shareBasePath + "\\" + year + "\\" + month)):
-            os.mkdir(shareBasePath + "\\" + year + "\\" + month)
-        
-        filePath = shareBasePath + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
-        sqlFile = open(filePath, 'w')
-        
-        for db in dbList:
-            insertion(sqlFile, db)        
-        return
+    filePath = basePath + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
+    sqlFile = open(filePath, 'w')
+    for db in dbList:
+        insertion(sqlFile, db)
+    return
+
+def share():
+    basePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra\\Database Backup"
+    createFile(basePath)
     
-    def deleteOldFiles():
-        folder = os.path.dirname(__file__) + "\\Database Backup\\"
-        
-        
-        fileList = os.listdir()
-        currentTime = time.time()
-        
-        # 'day' is the number of seconds in a day
-        day = 86400
-        minute = 60
-        
-        
-        for (root, dirs, files) in os.walk(folder, topdown=True):
-            for file in files:
-                filePath = os.path.join(root, file)
-                timestamp_of_file_modified = os.path.getmtime(filePath)
-                lastModification = datetime.fromtimestamp(timestamp_of_file_modified)
-                number_of_seconds = (datetime.now() - lastModification).seconds
-                print(number_of_seconds)
-        
-        return
+    basePath = r"\\DESKTOP-NTLGQ4N\Avra\Backup"
+    createFile(basePath)
+    return
     
+def local():
+    basePath = os.path.dirname(__file__) + "\\Database Backup"
+    createFile(basePath)
+    return
+
+def deleteOldFiles(folder):
+    for (root, dirs, files) in os.walk(folder, topdown=True):
+        for file in files:
+            filePath = os.path.join(root, file)
+            timestamp_of_file_modified = os.path.getmtime(filePath)
+            lastModification = datetime.fromtimestamp(timestamp_of_file_modified)
+            number_of_seconds = (datetime.now() - lastModification).seconds
+            number_of_days = (datetime.now() - lastModification).days
+            if(number_of_days > 90):
+                os.remove(filePath)
+                print("Delete: ", file)
+        for directory in dirs:
+            dirPath = os.listdir(os.path.join(root, directory))
+            if(len(dirPath) == 0):
+                os.rmdir(os.path.join(root, directory))
+                print("Delete Directory: ", os.path.join(root, directory))
+
+def backupCall():
     numArg = len(sys.argv)
     if(numArg > 2):
         print("Too many commandline arguments")
@@ -101,7 +99,20 @@ def main():
     else:
         local()
         share()
+    accessBackup()
+    return
 
+def deletionCall():
+    localFolder = os.path.dirname(__file__) + "\\Database Backup"
+    remoteFolder = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra\\Database Backup"
+    for i in range(2):
+        deleteOldFiles(localFolder)
+        deleteOldFiles(remoteFolder)
+    return
+
+def main(): 
+    backupCall()
+    deletionCall()
     return
 
 if __name__ == "__main__":

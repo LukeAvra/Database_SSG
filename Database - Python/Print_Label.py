@@ -107,12 +107,39 @@ def printOther(imageLocation):
     backend = 'network'
     model = modelList[11]
     printer = 'tcp://192.168.56.32'
+#    printImage = PIL.Image.open(imageLocation)
+#    printImage = printImage.resize((696, 300))
     printImage = PIL.Image.open(imageLocation)
-    printImage = printImage.resize((696, 300))
+    printImage = printImage.rotate(90, PIL.Image.NEAREST, expand = 1)
+    printImage = printImage.resize((350, 350))
+    pasteWidth, pasteHeight = printImage.size
+    im = PIL.Image.new("L", (696, 300), color = "white")
+    imWidth, imHeight = im.size
+    offset = ((imWidth - pasteWidth) // 2, (imHeight - pasteHeight) // 2)
+    im.paste(printImage, offset)
+
+
     
+    
+# =============================================================================
+#     instructions = brother_ql.conversion.convert(
+#         qlr = brother_ql.raster.BrotherQLRaster(model),
+#         images = [printImage],
+#         label = "62",
+#         rotate='0',
+#         threshold=35.0,
+#         dither=False,
+#         compress=False,
+#         red=False,
+#         dpi_600=False,
+#         hq=True,
+#         cut=True  
+#         )
+# =============================================================================
+
     instructions = brother_ql.conversion.convert(
         qlr = brother_ql.raster.BrotherQLRaster(model),
-        images = [printImage],
+        images = [im],
         label = "62",
         rotate='0',
         threshold=35.0,
@@ -172,7 +199,7 @@ def main():
     else:
         print("False")
         #printOther("C:\\Users\\Luke\\Documents\\Personal\\Other\\Of_Course1.png")
-        createBarcodeImage("FUCK", '146968201650')
+        createBarcodeImage("Goodness Gracious", '146968201650')
         printBarcode()
     return
 
