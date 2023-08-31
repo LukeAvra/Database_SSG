@@ -21,7 +21,7 @@ import bcrypt
 
 def addItemGUI():
     newItemWindow = tk.Tk()
-    newItemWindow.geometry("550x500")
+    newItemWindow.geometry("600x500+700+250")
     newItemWindow.title('New Item')
     cur = DG.conn.cursor()        
         
@@ -152,7 +152,6 @@ def addItemGUI():
         
         print('Item should have been added')
         newItemWindow.destroy()
-        mainMenu()
 
     # variables for adding items
     manID = tk.StringVar()
@@ -192,49 +191,49 @@ def addItemGUI():
     shelfEntry = tk.Entry(newItemWindow, textvariable = shelf, font=('calibre', 12))
     shelfLocationEntry = tk.Entry(newItemWindow, textvariable = shelfLocation, font=('calibre', 12))
            
-    manIDLabel.place(relx=.05, rely=.1, anchor='w')
-    manIDEntry.place(relx=.6, rely=.1, anchor='center')
+    manIDLabel.place(relx=.05, rely=.05, anchor='w')
+    manIDEntry.place(relx=.6, rely=.05, anchor='center')
     
-    manNameLabel.place(relx=.05, rely=.15, anchor='w')
-    manNameEntry.place(relx=.6, rely=.15, anchor='center')
+    manNameLabel.place(relx=.05, rely=.125, anchor='w')
+    manNameEntry.place(relx=.6, rely=.125, anchor='center')
     
     SupplierPartNumLabel.place(relx=.05, rely=.2, anchor='w')
     SupplierPartNumEntry.place(relx=.6, rely=.2, anchor='center')
     
-    SupplierNameLabel.place(relx=.05, rely=.25, anchor='w')
-    SupplierNameEntry.place(relx=.6, rely=.25, anchor='center')
+    SupplierNameLabel.place(relx=.05, rely=.275, anchor='w')
+    SupplierNameEntry.place(relx=.6, rely=.275, anchor='center')
     
-    DescriptionLabel.place(relx=.05, rely=.3, anchor='w')
-    DescriptionEntry.place(relx=.6, rely=.325, anchor='center')
+    DescriptionLabel.place(relx=.05, rely=.35, anchor='w')
+    DescriptionEntry.place(relx=.6, rely=.375, anchor='center')
     
-    QuantityLabel.place(relx=.05, rely=.425, anchor='w')
-    QuantityEntry.place(relx=.6, rely=.425, anchor='center')
+    QuantityLabel.place(relx=.05, rely=.475, anchor='w')
+    QuantityEntry.place(relx=.6, rely=.475, anchor='center')
     
-    BarcodeLabel.place(relx=.05, rely=.475, anchor='w')
-    BarcodeEntry.place(relx=.6, rely=.475, anchor='center')
+    BarcodeLabel.place(relx=.05, rely=.55, anchor='w')
+    BarcodeEntry.place(relx=.6, rely=.55, anchor='center')
     
-    roomLabel.place(relx=.05, rely=.525, anchor='w')
-    roomEntry.place(relx=.6, rely=.525, anchor='center')
+    roomLabel.place(relx=.05, rely=.625, anchor='w')
+    roomEntry.place(relx=.6, rely=.625, anchor='center')
     
-    rackLabel.place(relx=.05, rely=.575, anchor='w')
-    rackEntry.place(relx=.6, rely=.575, anchor='center')
+    rackLabel.place(relx=.05, rely=.7, anchor='w')
+    rackEntry.place(relx=.6, rely=.7, anchor='center')
     
-    shelfLabel.place(relx=.05, rely=.625, anchor='w')
-    shelfEntry.place(relx=.6, rely=.625, anchor='center')
+    shelfLabel.place(relx=.05, rely=.775, anchor='w')
+    shelfEntry.place(relx=.6, rely=.775, anchor='center')
     
-    shelfLocationLabel.place(relx=.05, rely=.675, anchor='w')
-    shelfLocationEntry.place(relx=.6, rely=.675, anchor='center')
+    shelfLocationLabel.place(relx=.05, rely=.85, anchor='w')
+    shelfLocationEntry.place(relx=.6, rely=.85, anchor='center')
     
     manIDEntry.focus_force()
     manIDEntry.bind("<FocusOut>", dataCheck)
     createButton = tk.Button(newItemWindow, text = 'Add Item', command = newItem)
-    createButton.place(relx=.5, rely = .8, anchor='center')
+    createButton.place(relx=.5, rely = .925, anchor='center')
     
-    returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), mainMenu()])
-    returnButton.place(relx=.5, rely=.9, anchor='center')
+    #returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), mainMenu()])
+    #returnButton.place(relx=.5, rely=.9, anchor='center')
     
     barcodeGeneratorButton = tk.Button(newItemWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel), pullBarcode(BarcodeEntry)])
-    barcodeGeneratorButton.place(relx=.9, rely=.5, anchor='center')
+    barcodeGeneratorButton.place(relx=.875, rely=.55, anchor='center')
     barcodeEntry = tk.Entry(newItemWindow, font=('calibre', 12))
     #barcodeEntry.place(relx=.5, rely=.85, anchor = 'center')
     checkDigitLabel = tk.Label(newItemWindow, text = '', font=('calibre', 12))
@@ -257,8 +256,9 @@ def adjustItemGUI(item_for_adjustment):
     invRecords, locRecords = DG.searchID(item_for_adjustment)
     
     adjustItemWindow = tk.Tk()
-    adjustItemWindow.geometry("600x400")
+    adjustItemWindow.geometry("600x400+700+250")
     adjustItemWindow.title('Adjust Item')
+    adjustItemWindow.focus_force()
     
     def printCode():
         labelText = manIDEntry.get().lower()
@@ -375,9 +375,10 @@ def adjustItemGUI(item_for_adjustment):
         
         # Careful here, there's no check for this, it just shows up if nothing crashed the program thus far.
         # Maybe establish a try/catch for the above three SQL statements? If no failures, display the box
-        tk.messagebox.showinfo("Success", 'Item Updated')
+        
+        tk.messagebox.showinfo("Success", 'Item Updated', parent=adjustItemWindow)
         adjustItemWindow.destroy()
-        mainMenu()
+        #mainMenu()
         return
 
     manID = tk.StringVar()
@@ -477,8 +478,8 @@ def adjustItemGUI(item_for_adjustment):
     adjustButton = tk.Button(adjustItemWindow, text = 'Adjust', command = adjustItem)
     adjustButton.place(relx= .5, rely= .85, anchor='center')
     
-    returnButton = tk.Button(adjustItemWindow, text = 'Home', command = lambda: [adjustItemWindow.destroy(), mainMenu()])
-    returnButton.place(relx= .85, rely= .9, anchor='center')
+    #returnButton = tk.Button(adjustItemWindow, text = 'Home', command = lambda: [adjustItemWindow.destroy(), mainMenu()])
+    #returnButton.place(relx= .85, rely= .9, anchor='center')
 
     adjustItemWindow.focus_force()
     adjustItemWindow.mainloop()
@@ -828,9 +829,6 @@ def createBOMGUI():
     bomWindow.mainloop()
     return
 
-
-# Need to adjust placements when page size changes
-#
 def viewBuilds():
     viewBuildsWindow = tk.Tk()
     viewBuildsWindow.title("Builds/RMAs")
@@ -842,6 +840,7 @@ def viewBuilds():
     searchEntry = tk.Entry(viewBuildsWindow, textvariable=searchBuild)
     buildListBox = tk.Listbox(viewBuildsWindow, width=30, height=8, selectmode = 'single')
     buildScrollbar = tk.Scrollbar(viewBuildsWindow)
+    buildListBox.config(yscrollcommand=buildScrollbar.set)
     homeButton = tk.Button(viewBuildsWindow, text = "Home", command = lambda : [viewBuildsWindow.destroy(), mainMenu()])
     
     def buildSearch(*args):
@@ -1035,6 +1034,7 @@ def userMenu():
     
     userListBox = tk.Listbox(userWindow)
     userScrollbar = tk.Scrollbar(userWindow)
+    userListBox.config(yscrollcommand=userScrollbar.set)
     
     sql = '''SELECT username FROM ''' + DG.userDatabase + ''';'''
     cur.execute(sql)
@@ -1317,6 +1317,7 @@ def checkOut():
         
         buildListBox = tk.Listbox(receiptScreen)
         buildScrollbar = tk.Scrollbar(receiptScreen)
+        buildListBox.configure(yscrollcommand=buildScrollbar.set)
         
         sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
         cur.execute(sql)
@@ -1378,10 +1379,10 @@ def checkOut():
 def inventoryBackup():
     tk.messagebox.showinfo("Alert", "Will create folders for year and month within selected directory.")
     saveFolder = filedialog.askdirectory()
-    print(saveFolder)
-    BU.createFile(saveFolder)
-    messageDialog = "Database successfully backed up to:\n" + saveFolder
-    tk.messagebox.showinfo("Success", messageDialog)
+    if(saveFolder):
+        BU.createFile(saveFolder)
+        messageDialog = "Database successfully backed up to:\n" + saveFolder
+        tk.messagebox.showinfo("Success", messageDialog)
     return
 
 
@@ -1395,16 +1396,52 @@ def adminBuildMenu():
     def buildSelectionAdmin(*args):
         #adminBuildMenuWindow.destroy()
         adminBuildMenu = tk.Tk()
-        adminBuildMenu.geometry("400x400")
+        adminBuildMenu.geometry("600x350")
         buildName = buildListBox.get(buildListBox.curselection())
         adminBuildMenu.title(buildName)
         adminBuildMenu.focus_force()
         
+        def fillBuildTree(rec):
+            buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
+            return
         
+        def deleteBuild():
+            print('Delete Build ' + buildName)
+            return
+        
+        sql = '''SELECT * FROM ''' + buildName + ''' ORDER BY timeadded;'''
+        cur.execute(sql)
+        selectedBuildRecords = cur.fetchall()
+        
+        buildNameLabel = tk.Label(adminBuildMenu, text = buildName, font = ('calibre', 12, 'bold'))
+        buildTree = ttk.Treeview(adminBuildMenu, selectmode = 'browse')
+        buildTreeScrollbar = tk.Scrollbar(adminBuildMenu, orient='vertical', command = buildTree.yview)
+        deleteBuildButton = tk.Button(adminBuildMenu, text='Delete Build', command = deleteBuild)
+        
+        buildNameLabel.place(relx=.5, rely=.07, anchor='center')
+        buildTree.place(relx=.5, rely=.45, anchor = 'center')
+        buildTreeScrollbar.place(relx=.89, rely=.45, anchor = 'center')
+        deleteBuildButton.place(relx=.75, rely=.9, anchor='center')
+        
+        buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
+        buildTree["columns"] = ("1", "2", "3", "4")
+        buildTree['show'] = 'headings' 
+        buildTree.column("1", width = 100, anchor = 'w')
+        buildTree.column("2", width = 200, anchor = 'w')
+        buildTree.column("3", width = 60, anchor = 'w')
+        buildTree.column("4", width = 130, anchor = 'w')
+        buildTree.heading("1", text = "Manufacturer #")
+        buildTree.heading("2", text = "Description")
+        buildTree.heading("3", text = "Quantity")
+        buildTree.heading("4", text = "Time added")
+        for rec in selectedBuildRecords:    
+            fillBuildTree(rec)
         
         return
 
+    buildScrollbar = tk.Scrollbar(adminBuildMenuWindow)
     buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
+    buildListBox.config(yscrollcommand = buildScrollbar.set)
     sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
     cur.execute(sql)
     buildNameRecords = cur.fetchall()
@@ -1413,7 +1450,7 @@ def adminBuildMenu():
             buildListBox.insert(i, buildNameRecords[i][0])
             
     buildListBox.place(relx=.5, rely=.4, anchor='center')
-            
+    buildScrollbar.place(relx=.73, rely=.4, anchor='center')
     buildListBox.bind('<Double-1>', buildSelectionAdmin)
     
 
@@ -1510,7 +1547,7 @@ def mainMenu():
     global searchVar
     global searchType
     mainMenuWindow = tk.Tk()
-    mainMenuWindow.geometry("600x200")
+    mainMenuWindow.geometry("600x200+500+300")
     mainMenuWindow.title("Main Menu")
     ttk.Style().configure("TButton", background="#ccc")
 
@@ -1548,7 +1585,7 @@ def mainMenu():
             
             def listBoxSelection(*listBoxArgs):
                 itemIndex = args[0].curselection()[0]
-                mainMenuWindow.destroy()
+                #mainMenuWindow.destroy()
                 adjustItemGUI(records[itemIndex][0])
                 return
             selectButton = tk.Button(mainMenuWindow, text = 'Select Item', command = listBoxSelection)
@@ -1564,6 +1601,7 @@ def mainMenu():
             
             invListbox.place(relx=.5, rely=.4, anchor='center')
             invScrollbar.place(relx=.79, rely=.4, anchor='center')
+            invListbox.configure(yscrollcommand=invScrollbar.set)
             # Row 2
             addItemButton.place(relx=.5, rely=.7, anchor='center')
             
@@ -1596,7 +1634,7 @@ def mainMenu():
                 sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
                 cur.execute(sql, [records[0][0]])
                 records = cur.fetchall()
-                mainMenuWindow.destroy()
+                #mainMenuWindow.destroy()
                 adjustItemGUI(records[0][0])
         else:
             print("Made it to barcodeSearch but searchType was not Barcode")
@@ -1608,7 +1646,7 @@ def mainMenu():
     searchInventoryEntry.bind('<Return>', lambda e: barcodeSearch())     
     #searchErrorLabel = tk.Label(mainMenuWindow, text='', font=('calibre', 12), fg='red')
     searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
-    addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [mainMenuWindow.destroy(), addItemGUI()])
+    addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [addItemGUI()])
     #removeItemButton = ttk.Button(mainMenuWindow, text = "Delete Item", command = lambda: [mainMenuWindow.destroy(), removeItem()])
     #createBomButton = ttk.Button(mainMenuWindow, text = "BOMs", command = lambda: [mainMenuWindow.destroy(), createBOMGUI()])
     buildsButton = ttk.Button(mainMenuWindow, text="Builds/RMAs", command = lambda: [mainMenuWindow.destroy(), viewBuilds()])
