@@ -83,10 +83,10 @@ def addItemGUI():
 
         newBomID = None
         
-        if(roomEntry.get() == ""):
+        if(room.get() == ""):
             newRoom = None
         else:
-            newRoom = roomEntry.get()
+            newRoom = room.get()
         
         if(rackEntry.get() == ""):
             newRack = None
@@ -105,11 +105,11 @@ def addItemGUI():
             
         # Uncomment this when ready to use the Brother printer for all labels
         labelText = newManID.lower()
-        if(roomEntry.get() != ''):
-            labelText = labelText + ' ' + roomEntry.get()
-            if(rackEntry.get() != ''):
+        if(roomChoiceBox.get() != ''):
+            labelText = labelText + ' ' + roomChoiceBox.get()
+        if(rackEntry.get() != ''):
                 labelText = labelText + ' ' + rackEntry.get().upper()
-            if(shelfEntry.get() != ''):
+        if(shelfEntry.get() != ''):
                 labelText = labelText + '-' + shelfEntry.get()
         PL.createBarcodeImage(labelText, newBarcode)
         PL.printBarcode()
@@ -186,7 +186,18 @@ def addItemGUI():
     DescriptionEntry = tk.Text(newItemWindow, font = ('calibre', 12), width = 20, height = 3)
     QuantityEntry = tk.Entry(newItemWindow, textvariable = Quantity, font=('calibre', 12))
     BarcodeEntry = tk.Entry(newItemWindow, textvariable = Barcode, font=('calibre', 12))
-    roomEntry = tk.Entry(newItemWindow, textvariable = room, font=('calibre', 12))
+    
+    choiceList = ['Inventory', 'Mezannine']
+    
+    roomChoiceBox = ttk.Combobox(
+                        newItemWindow,
+                        state='readonly',
+                        values = choiceList,
+                        textvariable=room
+                        )
+    roomChoiceBox.set('Inventory')
+    
+    #roomEntry = tk.Entry(newItemWindow, textvariable = room, font=('calibre', 12))
     rackEntry = tk.Entry(newItemWindow, textvariable = rack, font=('calibre', 12))
     shelfEntry = tk.Entry(newItemWindow, textvariable = shelf, font=('calibre', 12))
     shelfLocationEntry = tk.Entry(newItemWindow, textvariable = shelfLocation, font=('calibre', 12))
@@ -213,7 +224,7 @@ def addItemGUI():
     BarcodeEntry.place(relx=.6, rely=.55, anchor='center')
     
     roomLabel.place(relx=.05, rely=.625, anchor='w')
-    roomEntry.place(relx=.6, rely=.625, anchor='center')
+    roomChoiceBox.place(relx=.6, rely=.625, anchor='center')
     
     rackLabel.place(relx=.05, rely=.7, anchor='w')
     rackEntry.place(relx=.6, rely=.7, anchor='center')
@@ -262,14 +273,14 @@ def adjustItemGUI(item_for_adjustment):
     
     def printCode():
         labelText = manIDEntry.get().lower()
-        if(roomEntry.get() != ''):
-            labelText = labelText + ' ' + roomEntry.get()
+        if(roomChoiceBox.get() != ''):
+            labelText = labelText + ' ' + roomChoiceBox.get()
         if(rackEntry.get() != ''):
             labelText = labelText + ' ' + rackEntry.get().upper()
         if(shelfEntry.get() != ''):
             labelText = labelText + '-' + shelfEntry.get()
         PL.createBarcodeImage(labelText, BarcodeEntry.get())
-        PL.printBarcode()
+        #PL.printBarcode()
         return
     
     def adjustItem():
@@ -289,7 +300,7 @@ def adjustItemGUI(item_for_adjustment):
             tk.messagebox.showerror("Error", "Barcodes must be 12 characters long")
             return
             
-        adjustedroom = roomEntry.get()
+        adjustedroom = room.get()
         if(rackEntry.get() == ""):
             adjustedrack = None
         elif(len(rackEntry.get()) > 1):
@@ -411,7 +422,16 @@ def adjustItemGUI(item_for_adjustment):
     DescriptionEntry = tk.Text(adjustItemWindow, font = ('calibre', 12), width = 20, height = 3)
     QuantityEntry = tk.Entry(adjustItemWindow, textvariable = Quantity, font=('calibre', 12))
     BarcodeEntry = tk.Entry(adjustItemWindow, textvariable = Barcode, font=('calibre', 12))
-    roomEntry = tk.Entry(adjustItemWindow, textvariable = room, font=('calibre', 12))
+    choiceList = ['Inventory', 'Mezannine']
+    
+    roomChoiceBox = ttk.Combobox(
+                        adjustItemWindow,
+                        state='readonly',
+                        values = choiceList,
+                        textvariable=room
+                        )
+    roomChoiceBox.set('Inventory')
+    #roomEntry = tk.Entry(adjustItemWindow, textvariable = room, font=('calibre', 12))
     rackEntry = tk.Entry(adjustItemWindow, textvariable = rack, font=('calibre', 12))
     shelfEntry = tk.Entry(adjustItemWindow, textvariable = shelf, font=('calibre', 12))
     shelfLocationEntry = tk.Entry(adjustItemWindow, textvariable = shelfLocation, font=('calibre', 12))
@@ -431,7 +451,7 @@ def adjustItemGUI(item_for_adjustment):
     if(invRecords[0][6]):
         BarcodeEntry.insert(0, invRecords[0][6])
     if(locRecords[0][0]):
-        roomEntry.insert(0, locRecords[0][0])
+        roomChoiceBox.set(locRecords[0][0])
     if(locRecords[0][1]):
         rackEntry.insert(0, chr(locRecords[0][1]))
     if(locRecords[0][2]):
@@ -461,7 +481,7 @@ def adjustItemGUI(item_for_adjustment):
     BarcodeEntry.place(relx=.55, rely=.5, anchor='center')
     
     roomLabel.place(relx=.05, rely=.55, anchor='w')
-    roomEntry.place(relx=.55, rely=.55, anchor='center')
+    roomChoiceBox.place(relx=.55, rely=.55, anchor='center')
     
     rackLabel.place(relx=.05, rely=.6, anchor='w')
     rackEntry.place(relx=.55, rely=.6, anchor='center')
