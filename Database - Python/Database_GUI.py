@@ -280,7 +280,7 @@ def adjustItemGUI(item_for_adjustment):
         if(shelfEntry.get() != ''):
             labelText = labelText + '-' + shelfEntry.get()
         PL.createBarcodeImage(labelText, BarcodeEntry.get())
-        #PL.printBarcode()
+        PL.printBarcode()
         return
     
     def adjustItem():
