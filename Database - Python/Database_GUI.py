@@ -264,10 +264,10 @@ def adjustItemGUI(item_for_adjustment):
         labelText = manIDEntry.get().lower()
         if(roomEntry.get() != ''):
             labelText = labelText + ' ' + roomEntry.get()
-            if(rackEntry.get() != ''):
-                labelText = labelText + ' ' + rackEntry.get().upper()
-            if(shelfEntry.get() != ''):
-                labelText = labelText + '-' + shelfEntry.get()
+        if(rackEntry.get() != ''):
+            labelText = labelText + ' ' + rackEntry.get().upper()
+        if(shelfEntry.get() != ''):
+            labelText = labelText + '-' + shelfEntry.get()
         PL.createBarcodeImage(labelText, BarcodeEntry.get())
         PL.printBarcode()
         return
@@ -1635,14 +1635,21 @@ def mainMenu():
                 cur.execute(sql, [records[0][0]])
                 records = cur.fetchall()
                 #mainMenuWindow.destroy()
+                searchInventoryEntry.delete(0, tk.END)
                 adjustItemGUI(records[0][0])
+                
         else:
             print("Made it to barcodeSearch but searchType was not Barcode")
         return
     
+
     searchVar.trace_add('write', searchHelper)
     searchInventoryLabel = tk.Label(mainMenuWindow, text='Search', font=('calibre', 12, 'bold'))
     searchInventoryEntry = tk.Entry(mainMenuWindow, textvariable = searchVar, font=('calibre', 12))  
+    #
+    # THIS GETS CALLED NO MATTER WHAT IF THE USER HITS ENTER ON A SEARCH
+    # CREATE HELPER FUNCTION TO REDIRECT IF IT'S NOT A BARCODE
+    #
     searchInventoryEntry.bind('<Return>', lambda e: barcodeSearch())     
     #searchErrorLabel = tk.Label(mainMenuWindow, text='', font=('calibre', 12), fg='red')
     searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
