@@ -187,7 +187,7 @@ def addItemGUI():
     QuantityEntry = tk.Entry(newItemWindow, textvariable = Quantity, font=('calibre', 12))
     BarcodeEntry = tk.Entry(newItemWindow, textvariable = Barcode, font=('calibre', 12))
     
-    choiceList = ['Inventory', 'Mezannine']
+    choiceList = ['Inventory', 'Mezannine', 'Pallet Rack']
     
     roomChoiceBox = ttk.Combobox(
                         newItemWindow,
@@ -422,7 +422,7 @@ def adjustItemGUI(item_for_adjustment):
     DescriptionEntry = tk.Text(adjustItemWindow, font = ('calibre', 12), width = 20, height = 3)
     QuantityEntry = tk.Entry(adjustItemWindow, textvariable = Quantity, font=('calibre', 12))
     BarcodeEntry = tk.Entry(adjustItemWindow, textvariable = Barcode, font=('calibre', 12))
-    choiceList = ['Inventory', 'Mezannine']
+    choiceList = ['Inventory', 'Mezannine', 'Pallet Rack']
     
     roomChoiceBox = ttk.Combobox(
                         adjustItemWindow,
@@ -459,44 +459,44 @@ def adjustItemGUI(item_for_adjustment):
     if(locRecords[0][3]):
         shelfLocationEntry.insert(0, locRecords[0][3])
 
-    manIDLabel.place(relx=.05, rely=.1, anchor='w')
-    manIDEntry.place(relx=.55, rely=.1, anchor='center')
+    manIDLabel.place(relx=.05, rely=.075, anchor='w')
+    manIDEntry.place(relx=.55, rely=.075, anchor='center')
     
     manNameLabel.place(relx=.05, rely=.15, anchor='w')
     manNameEntry.place(relx=.55, rely=.15, anchor='center')
     
-    SupplierPartNumLabel.place(relx=.05, rely=.2, anchor='w')
-    SupplierPartNumEntry.place(relx=.55, rely=.2, anchor='center')
+    SupplierPartNumLabel.place(relx=.05, rely=.225, anchor='w')
+    SupplierPartNumEntry.place(relx=.55, rely=.225, anchor='center')
     
-    supplierNameLabel.place(relx=.05, rely=.25, anchor='w')
-    supplierNameEntry.place(relx=.55, rely=.25, anchor='center')
+    supplierNameLabel.place(relx=.05, rely=.3, anchor='w')
+    supplierNameEntry.place(relx=.55, rely=.3, anchor='center')
     
-    DescriptionLabel.place(relx=.05, rely=.325, anchor='w')
-    DescriptionEntry.place(relx=.55, rely=.35, anchor='center')
+    DescriptionLabel.place(relx=.05, rely=.375, anchor='w')
+    DescriptionEntry.place(relx=.55, rely=.4, anchor='center')
     
-    QuantityLabel.place(relx=.05, rely=.45, anchor='w')
-    QuantityEntry.place(relx=.55, rely=.45, anchor='center')
+    QuantityLabel.place(relx=.05, rely=.475, anchor='w')
+    QuantityEntry.place(relx=.55, rely=.475, anchor='center')
     
-    BarcodeLabel.place(relx=.05, rely=.5, anchor='w')
-    BarcodeEntry.place(relx=.55, rely=.5, anchor='center')
+    BarcodeLabel.place(relx=.05, rely=.55, anchor='w')
+    BarcodeEntry.place(relx=.55, rely=.55, anchor='center')
     
-    roomLabel.place(relx=.05, rely=.55, anchor='w')
-    roomChoiceBox.place(relx=.55, rely=.55, anchor='center')
+    roomLabel.place(relx=.05, rely=.625, anchor='w')
+    roomChoiceBox.place(relx=.55, rely=.625, anchor='center')
     
-    rackLabel.place(relx=.05, rely=.6, anchor='w')
-    rackEntry.place(relx=.55, rely=.6, anchor='center')
+    rackLabel.place(relx=.05, rely=.7, anchor='w')
+    rackEntry.place(relx=.55, rely=.7, anchor='center')
     
-    shelfLabel.place(relx=.05, rely=.65, anchor='w')
-    shelfEntry.place(relx=.55, rely=.65, anchor='center')
+    shelfLabel.place(relx=.05, rely=.775, anchor='w')
+    shelfEntry.place(relx=.55, rely=.775, anchor='center')
     
-    shelfLocationLabel.place(relx=.05, rely=.7, anchor='w')
-    shelfLocationEntry.place(relx=.55, rely=.7, anchor='center')
+    shelfLocationLabel.place(relx=.05, rely=.85, anchor='w')
+    shelfLocationEntry.place(relx=.55, rely=.85, anchor='center')
     
     printButton = tk.Button(adjustItemWindow, text = "Print Label", command = printCode)
-    printButton.place(relx= .7, rely= .85, anchor = 'center')
+    printButton.place(relx= .7, rely= .925, anchor = 'center')
     
     adjustButton = tk.Button(adjustItemWindow, text = 'Adjust', command = adjustItem)
-    adjustButton.place(relx= .5, rely= .85, anchor='center')
+    adjustButton.place(relx= .5, rely= .925, anchor='center')
     
     #returnButton = tk.Button(adjustItemWindow, text = 'Home', command = lambda: [adjustItemWindow.destroy(), mainMenu()])
     #returnButton.place(relx= .85, rely= .9, anchor='center')
