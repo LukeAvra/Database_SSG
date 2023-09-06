@@ -197,7 +197,6 @@ def addItemGUI():
                         )
     roomChoiceBox.set('Inventory')
     
-    #roomEntry = tk.Entry(newItemWindow, textvariable = room, font=('calibre', 12))
     rackEntry = tk.Entry(newItemWindow, textvariable = rack, font=('calibre', 12))
     shelfEntry = tk.Entry(newItemWindow, textvariable = shelf, font=('calibre', 12))
     shelfLocationEntry = tk.Entry(newItemWindow, textvariable = shelfLocation, font=('calibre', 12))
@@ -240,15 +239,10 @@ def addItemGUI():
     createButton = tk.Button(newItemWindow, text = 'Add Item', command = newItem)
     createButton.place(relx=.5, rely = .925, anchor='center')
     
-    #returnButton = tk.Button(newItemWindow, text = 'Home', command = lambda: [newItemWindow.destroy(), mainMenu()])
-    #returnButton.place(relx=.5, rely=.9, anchor='center')
-    
     barcodeGeneratorButton = tk.Button(newItemWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel), pullBarcode(BarcodeEntry)])
     barcodeGeneratorButton.place(relx=.875, rely=.55, anchor='center')
     barcodeEntry = tk.Entry(newItemWindow, font=('calibre', 12))
-    #barcodeEntry.place(relx=.5, rely=.85, anchor = 'center')
     checkDigitLabel = tk.Label(newItemWindow, text = '', font=('calibre', 12))
-    #checkDigitLabel.place(relx=.7, rely=.85, anchor = 'center')
     
     # Fill in the barcode entry automatically on window creation
     generateBarcode(barcodeEntry, checkDigitLabel)
@@ -385,11 +379,9 @@ def adjustItemGUI(item_for_adjustment):
             cur.execute(sql, [adjustedBarcode])
         
         # Careful here, there's no check for this, it just shows up if nothing crashed the program thus far.
-        # Maybe establish a try/catch for the above three SQL statements? If no failures, display the box
-        
+        # Maybe establish a try/catch for the above three SQL statements? If no failures, display the box 
         tk.messagebox.showinfo("Success", 'Item Updated', parent=adjustItemWindow)
         adjustItemWindow.destroy()
-        #mainMenu()
         return
 
     manID = tk.StringVar()
@@ -431,7 +423,6 @@ def adjustItemGUI(item_for_adjustment):
                         textvariable=room
                         )
     roomChoiceBox.set('Inventory')
-    #roomEntry = tk.Entry(adjustItemWindow, textvariable = room, font=('calibre', 12))
     rackEntry = tk.Entry(adjustItemWindow, textvariable = rack, font=('calibre', 12))
     shelfEntry = tk.Entry(adjustItemWindow, textvariable = shelf, font=('calibre', 12))
     shelfLocationEntry = tk.Entry(adjustItemWindow, textvariable = shelfLocation, font=('calibre', 12))
@@ -497,9 +488,6 @@ def adjustItemGUI(item_for_adjustment):
     
     adjustButton = tk.Button(adjustItemWindow, text = 'Adjust', command = adjustItem)
     adjustButton.place(relx= .5, rely= .925, anchor='center')
-    
-    #returnButton = tk.Button(adjustItemWindow, text = 'Home', command = lambda: [adjustItemWindow.destroy(), mainMenu()])
-    #returnButton.place(relx= .85, rely= .9, anchor='center')
 
     adjustItemWindow.focus_force()
     adjustItemWindow.mainloop()
@@ -773,10 +761,6 @@ def createBOMGUI():
         for record in records:
             if(record[0] not in useList):
                 nonUseList.add(record[0])
-# =============================================================================
-#         nonUseList = set(nonUseList)
-#         useList = set(useList)
-# =============================================================================
         print("Items Used: ", useList)
         print("Items Unused: ", nonUseList)
         return
@@ -897,8 +881,6 @@ def viewBuilds():
             buildNameLabel = tk.Label(viewBuildsWindow, text = tableName, font=('calibre', 12, 'bold'))
             
             printCodeButton = tk.Button(viewBuildsWindow, text = "Print Barcode", command = printHelper)
-            
-
             searchLabel.place(relx=.056, rely=.2, anchor = 'w')
             searchEntry.place(relx=.131, rely=.2, anchor='w')
             buildNameLabel.place(relx=.65, rely=.06, anchor='center')
@@ -1041,7 +1023,6 @@ def userMenu():
             selectedUserLabel.config(text = userListBox.get(userListBox.curselection()))
             selectedUserEntry.insert(0, records[0][0])
             selectedUserWindow.focus_force()
-            #print(userListBox.get(userListBox.curselection()))
         return
     
     def deleteUser():
@@ -1414,7 +1395,6 @@ def adminBuildMenu():
     adminBuildMenuWindow.focus_force()
     
     def buildSelectionAdmin(*args):
-        #adminBuildMenuWindow.destroy()
         adminBuildMenu = tk.Tk()
         adminBuildMenu.geometry("600x350")
         buildName = buildListBox.get(buildListBox.curselection())
@@ -1491,8 +1471,6 @@ def adminMenu():
     bomButton.place(relx=.5, rely=.6, anchor='center')
     buildButton.place(relx=.5, rely=.7, anchor='center')
     homeButton.place(relx=.75, rely=.85, anchor='center')
-    
-    
     return
 
 def adminLogin():
@@ -1641,6 +1619,11 @@ def mainMenu():
         adminLogin()
         return
     
+    def barcodeSearchHelper():
+        if(searchType.get() == 'Barcode'):
+            barcodeSearch()
+        return
+    
     def barcodeSearch():
         if(searchType.get() == 'Barcode'):
             bar = searchVar.get()
@@ -1670,7 +1653,7 @@ def mainMenu():
     # THIS GETS CALLED NO MATTER WHAT IF THE USER HITS ENTER ON A SEARCH
     # CREATE HELPER FUNCTION TO REDIRECT IF IT'S NOT A BARCODE
     #
-    searchInventoryEntry.bind('<Return>', lambda e: barcodeSearch())     
+    searchInventoryEntry.bind('<Return>', lambda e: barcodeSearchHelper())     
     #searchErrorLabel = tk.Label(mainMenuWindow, text='', font=('calibre', 12), fg='red')
     searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
     addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [addItemGUI()])
