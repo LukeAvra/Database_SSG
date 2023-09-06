@@ -1654,17 +1654,10 @@ def mainMenu():
     # CREATE HELPER FUNCTION TO REDIRECT IF IT'S NOT A BARCODE
     #
     searchInventoryEntry.bind('<Return>', lambda e: barcodeSearchHelper())     
-    #searchErrorLabel = tk.Label(mainMenuWindow, text='', font=('calibre', 12), fg='red')
     searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
     addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [addItemGUI()])
-    #removeItemButton = ttk.Button(mainMenuWindow, text = "Delete Item", command = lambda: [mainMenuWindow.destroy(), removeItem()])
-    #createBomButton = ttk.Button(mainMenuWindow, text = "BOMs", command = lambda: [mainMenuWindow.destroy(), createBOMGUI()])
     buildsButton = ttk.Button(mainMenuWindow, text="Builds/RMAs", command = lambda: [mainMenuWindow.destroy(), viewBuilds()])
     checkOutButton = ttk.Button(mainMenuWindow, text = 'Check Out', command = lambda:[mainMenuWindow.destroy(), checkOut()])
-    #userButton = ttk.Button(mainMenuWindow, text="Users", command = lambda: [mainMenuWindow.destroy(), userMenu()])
-    #barcodeGeneratorButton = ttk.Button(mainMenuWindow, text = "Generate Barcode", command = lambda:[generateBarcode(barcodeEntry, checkDigitLabel)])
-    #barcodeEntry = tk.Entry(mainMenuWindow, font=('calibre', 12))
-    #checkDigitLabel = tk.Label(mainMenuWindow, text = '', font=('calibre', 12))
     adminButton = ttk.Button(mainMenuWindow, text = 'Admin', command = adminMenuHelper)
 
     # Row 1
@@ -1672,7 +1665,6 @@ def mainMenu():
     searchInventoryEntry.place(relx=.38, rely=.1, anchor='center')    
     searchChoiceBox.place(relx=.67, rely=.1, anchor='center')
     searchButton.place(relx=.88, rely=.1, anchor='center')
-    #searchErrorLabel.place(relx=.38, rely=.15, anchor='center')
     
     # Row 2
     addItemButton.place(relx=.5, rely=.3, anchor='center')
