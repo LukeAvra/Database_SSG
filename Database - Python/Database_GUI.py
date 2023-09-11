@@ -21,7 +21,10 @@ import bcrypt
 
 def addItemGUI():
     newItemWindow = tk.Tk()
-    newItemWindow.geometry("600x500+700+250")
+    subWindow_x = str(mainMenuWindow.winfo_x() + 100)
+    subWindow_y = str(mainMenuWindow.winfo_y() + 50)
+    windowPosition = subWindow_x + "+" + subWindow_y
+    newItemWindow.geometry("600x500" + "+" + windowPosition)
     newItemWindow.title('New Item')
     cur = DG.conn.cursor()        
         
@@ -34,7 +37,10 @@ def addItemGUI():
         records = cur.fetchall()
         if records:
             newItemWindow.destroy()
-            adjustItemGUI(manIDCheck)
+            adjustWindowLoc_x = str(newItemWindow.winfo_x() + 100)
+            adjustWindowLoc_y = str(newItemWindow.winfo_x() + 50)
+            adjustWindowLoc = adjustWindowLoc_x + "+" + adjustWindowLoc_y
+            adjustItemGUI(manIDCheck, adjustWindowLoc)
         return
     
     def pullBarcode(BarcodeEntry):
@@ -251,7 +257,7 @@ def addItemGUI():
     newItemWindow.mainloop()
     return
 
-def adjustItemGUI(item_for_adjustment):
+def adjustItemGUI(item_for_adjustment, location):
     cur = DG.conn.cursor()
     sql = '''SELECT Barcode FROM ''' + DG.invDatabase + '''
             WHERE ManufacturerID = %s'''
@@ -261,7 +267,7 @@ def adjustItemGUI(item_for_adjustment):
     invRecords, locRecords = DG.searchID(item_for_adjustment)
     
     adjustItemWindow = tk.Tk()
-    adjustItemWindow.geometry("600x400+700+250")
+    adjustItemWindow.geometry("600x400+" + location)
     adjustItemWindow.title('Adjust Item')
     adjustItemWindow.focus_force()
     
@@ -445,7 +451,7 @@ def adjustItemGUI(item_for_adjustment):
         roomChoiceBox.set(locRecords[0][0])
     if(locRecords[0][1]):
         rackEntry.insert(0, chr(locRecords[0][1]))
-    if(locRecords[0][2]):
+    if(locRecords[0][2] != None):
         shelfEntry.insert(0, locRecords[0][2])
     if(locRecords[0][3]):
         shelfLocationEntry.insert(0, locRecords[0][3])
@@ -491,346 +497,6 @@ def adjustItemGUI(item_for_adjustment):
 
     adjustItemWindow.focus_force()
     adjustItemWindow.mainloop()
-    return
-
-def removeItem():
-    removeItemWindow = tk.Tk()
-    removeItemWindow.geometry("600x150")
-    removeItemWindow.title("Remove Item")
-    removeVar = tk.StringVar()
-    cur = DG.conn.cursor()
-    
-    def itemRemoval(item_to_remove):
-        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
-        cur.execute(sql, [item_to_remove])
-        records = cur.fetchall()
-        if(records):
-            sql = '''DELETE FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
-            cur.execute(sql, [item_to_remove])
-            sql = '''DELETE FROM ''' + DG.locDatabase + ''' WHERE Barcode = %s'''
-            cur.execute(sql, [records[0][6]])
-            sql = '''DELETE FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
-            cur.execute(sql, [records[0][6]])
-            
-            message = "Item:", item_to_remove, 'deleted'
-            tk.messagebox.showinfo("Success", message)
-            removeItemEntry.delete(0, tk.END)
-        else:
-            tk.messagebox.showerror('Error', 'Item not found in inventory')
-        return
-            
-    def removeCheckHelper(*args):
-        manIDPartial = '%' + removeItemEntry.get().lower() + '%'
-        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE manufacturerid ILIKE %s'''
-        cur.execute(sql, [manIDPartial])
-        invRecords = cur.fetchall()
-        if(invRecords):
-            removeItemWindow.geometry("600x400")
-            removeItemLabel.place(relx=.01, rely=.15)
-            removeItemEntry.place(relx=.48, rely=.15, anchor='center')
-            searchButton.place(relx=.7, rely=.15, anchor='center')
-
-            def fillRemoveTree():
-                for record in invRecords:
-                    removeTree.insert("", 'end', values=(record[0], record[4], record[6], record[5]))     #manID, name, barcode, quantity))
-                return
-            
-            def removeCheck():
-                #Double check that item should actually be removed
-                removeCheckWindow = tk.Tk()
-                removeCheckWindow.geometry("400x200")
-                removeCheckWindow.title("Are you sure?")
-                removeCheckWindow.focus_force()
-                
-                item_to_remove = removeTree.item(removeTree.focus())['values'][0]
-                removeText = "Are you sure you want to remove item: " + item_to_remove
-                removeLabel = tk.Label(removeCheckWindow, text = removeText, font = ('calibre', 12))
-                yesButton = tk.Button(removeCheckWindow, text = "Yes", command = lambda: [itemRemoval(item_to_remove), removeCheckWindow.destroy()])
-                noButton = tk.Button(removeCheckWindow, text = "No", command = removeCheckWindow.destroy)
-                removeItemEntry.unbind('<Return>')
-                removeCheckWindow.bind('<Return>', lambda event:[itemRemoval(removeVar.get()), removeCheckWindow.destroy(), removeItemEntry.bind('<Return>', lambda e: removeCheck())])
-                
-                removeLabel.place(relx=.5, rely=.3, anchor='center')
-                yesButton.place(relx=.2, rely=.6, anchor = 'center')
-                noButton.place(relx=.8, rely=.6, anchor='center')   
-                
-                removeCheckWindow.mainloop()
-                return
-            
-            removeTree = ttk.Treeview(removeItemWindow, selectmode = 'browse')
-            removeTreeScrollbar = tk.Scrollbar(removeItemWindow, orient='vertical', command = removeTree.yview)
-            
-            removeTreeScrollbar.place(relx=.84, rely=.55, anchor = 'w')
-            removeTree.place(relx=.1, rely=.55, anchor = 'w')
-            returnButton.place(relx=.85, rely=.9, anchor='center')
-            removeButton = tk.Button(removeItemWindow, text = 'Delete', command = removeCheck)
-            removeButton.place(relx= .5, rely=.9, anchor='center')
-
-            removeTree.configure(yscrollcommand = removeTreeScrollbar.set)
-            removeTree["columns"] = ("1", "2", "3", "4")
-            removeTree['show'] = 'headings' 
-            removeTree.column("1", width = 100, anchor = 'w')
-            removeTree.column("2", width = 200, anchor = 'w')
-            removeTree.column("3", width = 100, anchor = 'w')
-            removeTree.column("4", width = 60, anchor = 'w')
-            removeTree.heading("1", text = "Manufacturer #")
-            removeTree.heading("2", text = "Description")
-            removeTree.heading("3", text = "Barcode")
-            removeTree.heading("4", text = "Quantity")
-            fillRemoveTree()
-        return
-
-    removeVar.trace_add('write', removeCheckHelper)
-    removeItemLabel = tk.Label(removeItemWindow, text = "Manufacturer Number:", font=('calibre', 12, 'bold'))
-    removeItemEntry = tk.Entry(removeItemWindow, textvariable = removeVar, font=('calibre', 12))
-    
-    searchButton = tk.Button(removeItemWindow, text = 'Search', command = removeCheckHelper)
-    removeItemEntry.bind('<Return>', lambda e: removeCheckHelper())
-    
-    returnButton = tk.Button(removeItemWindow, text = 'Return', command = lambda: [removeItemWindow.destroy(), adminMenu()])
-    
-    removeItemLabel.place(relx=.01, rely=.4, anchor='w')
-    removeItemEntry.place(relx=.48, rely=.4, anchor='center')
-    searchButton.place(relx=.7, rely=.4, anchor='center')
-    returnButton.place(relx=.85, rely=.85, anchor='center')
-    
-    removeItemEntry.focus_force()
-    removeItemWindow.mainloop()
-    return
-
-def createBOMGUI():
-    bomWindow = tk.Tk()
-    bomWindow.geometry("600x200")
-    bomWindow.title("Bill of Materials")
-    cur = DG.conn.cursor()
-    
-    def createBOMID():
-        bomID = random.randrange(0, 10000)
-        sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_id = %s'''
-        cur.execute(sql, [bomID])
-        records = cur.fetchall()
-        if(records):
-            createBOMID()
-        else:
-            return(bomID)
-    
-    def createBom():
-        if(not itemName.get()):
-            tk.messagebox.showerror("Error", 'Please select an item')
-            return
-        bomWindow.destroy()
-        createBomWindow = tk.Tk()
-        createBomWindow.title("Create BOM")
-        createBomWindow.geometry("600x400")
-        
-        def addBomItem():
-            inv, loc = DG.searchID(manIDEntry.get().lower())
-            sql = '''SELECT manufacturerid FROM ''' + DG.invDatabase + ''' WHERE bom_id = %s'''
-            cur.execute(sql, [bomID])
-            selfID = cur.fetchall()
-            if(selfID):
-                selfID = selfID[0][0]
-            try:
-                quant = int(quantityEntry.get())
-            except ValueError:
-                tk.messagebox.showerror("Error", "Quantity must be an integer value")
-                quantityEntry.delete(0, tk.END)
-                quantityEntry.focus_force()
-                return
-            if(not inv):
-                tk.messagebox.showerror("Error", "Manufacturer Number not found")
-            elif(quant < 1):
-                tk.messagebox.showerror("Error", "Please enter a quantity greater than zero")
-            elif(manIDEntry.get().lower() == selfID):
-                tk.messagebox.showerror("Error", "Cannot add item to it's own BOM")
-            else:
-                bomTree.insert("", 'end', values=(manIDEntry.get().lower(), quant))
-            manIDEntry.delete(0, tk.END)
-            quantityEntry.delete(0, tk.END)
-            manIDEntry.focus_force()
-            return
-        
-        def remBomItem():
-            selected = bomTree.selection()[0]
-            bomTree.delete(selected)
-            return
-        
-        def finalize():
-            # CREATING BOM TABLE
-            tableName = "bom_" + str(bomID)
-            sql = '''CREATE TABLE IF NOT EXISTS ''' + tableName + '''(
-                        ManufacturerID VARCHAR(100),
-                        QuantityNeeded SMALLINT
-                    );'''
-            cur.execute(sql)
-            
-            if(edit):
-                sql = '''DELETE FROM ''' + tableName + ''';'''
-                cur.execute(sql)
-            else:
-                # INSERTING BOM_ID# and BOM_NAME INTO BOM TABLE OF TABLES
-                sql = '''INSERT INTO ''' + DG.bomDatabase + ''' (bom_id, bom_name) VALUES (%s, %s);'''
-                cur.execute(sql, [bomID, itemName.get()])
-                sql = '''UPDATE ''' + DG.invDatabase + ''' SET bom_id = %s WHERE name = %s'''
-                cur.execute(sql, [bomID, itemName.get()])
-            # INSERTING ALL MANUFACTURER IDS AND QUANTITIES
-            for line in bomTree.get_children():
-                sql = '''INSERT INTO ''' + tableName + '''(ManufacturerID, QuantityNeeded) VALUES (%s, %s);'''
-                cur.execute(sql, [bomTree.item(line).get('values')[0], bomTree.item(line).get('values')[1]])
-            
-            # Show success box before transfer back
-            tk.messagebox.showinfo("Success", 'Bill of Materials saved')
-            createBomWindow.destroy()
-            mainMenu()          
-            return
-            
-        manIDLabel = tk.Label(createBomWindow, text = "Manufacturer Number:", font=('calibre', 12))
-        manIDEntry = tk.Entry(createBomWindow, width = 30)
-        quantityLabel = tk.Label(createBomWindow, text = "Quantity:", font=('calibre', 12))
-        quantityEntry = tk.Entry(createBomWindow, width = 5)
-        bomTree = ttk.Treeview(createBomWindow, selectmode = 'browse')
-        completeBomButton = tk.Button(createBomWindow, text = "Finalize", command = finalize)
-        addItemButton = tk.Button(createBomWindow, text = "Add Item", command = lambda:[addBomItem()])
-        removeItemButton = tk.Button(createBomWindow, text = "Remove Item", command = lambda:[remBomItem()])
-        bomScrollbar = tk.Scrollbar(createBomWindow, orient='vertical', command = bomTree.yview)
-        returnButton = tk.Button(createBomWindow, text = 'Return', command = lambda:[createBomWindow.destroy(), createBOMGUI()])
-        
-        manIDEntry.focus_force()
-        manIDEntry.bind('<Return>', lambda e: addBomItem())
-        quantityEntry.bind('<Return>', lambda e: addBomItem())
-        
-        manIDLabel.place(relx=.15, rely=.1, anchor='center')
-        manIDEntry.place(relx=.4, rely=.1, anchor = 'center')
-        quantityLabel.place(relx=.56, rely=.1, anchor='center')
-        quantityEntry.place(relx=.66, rely=.1, anchor = 'center')
-        addItemButton.place(relx=.8, rely=.1, anchor = 'center')
-        removeItemButton.place(relx=.35, rely=.8, anchor = 'center')
-        bomTree.place(relx=.5, rely=.45, anchor = 'center')
-        bomScrollbar.place(relx=.65, rely=.45, anchor = 'center')
-        completeBomButton.place(relx=.65, rely=.8, anchor = 'center')
-        returnButton.place(relx = .5, rely=.9, anchor='center')
-        
-        bomTree.configure(yscrollcommand = bomScrollbar.set)
-        bomTree["columns"] = ("1", "2")
-        bomTree['show'] = 'headings' 
-        bomTree.column("1", width = 100, anchor = 'w')
-        bomTree.column("2", width = 100, anchor = 'w')
-        bomTree.heading("1", text = "Manufacturer Number")
-        bomTree.heading("2", text = "Quantity")
-            
-        # USE FOR EDITING BOM
-        # FILLS TREE WITH INFORMATION ALREADY IN DATABASE        
-        sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_name = %s'''
-        cur.execute(sql, [itemName.get()])
-        records = cur.fetchall()
-        edit = 0
-        if(records):
-            edit = 1
-            bomID = records[0][0]
-            tableName = "bom_" + str(bomID)
-            sql = '''SELECT * FROM ''' + tableName + ''';'''
-            cur.execute(sql)
-            records = cur.fetchall()
-            if(records):
-                for record in records:
-                    bomTree.insert("", 'end', values=(record[0], record[1]))
-        else:
-            bomID = createBOMID()
-
-        createBomWindow.mainloop()
-        return
-    
-    # useList and nonUseList are what is and isn't used in the inventory to make a particular bom
-    def checkInventoryHelper():
-        useList, nonUseList = set([]), set([])
-        bomString = bomEntryBox.get()
-        bomList = [i.strip() for i in bomString.split(",")]
-        for bom in bomList:
-            sql = '''SELECT bom_id FROM ''' + DG.bomDatabase + ''' WHERE bom_name = %s;'''
-            cur.execute(sql, [bom])
-            records = cur.fetchall()
-            if(records):
-                bomIDNum = records[0][0]
-                checkInventory(bomIDNum, useList, nonUseList)
-                sql = '''SELECT * FROM ''' + DG.invDatabase + ''';'''
-                cur.execute(sql)
-                records = cur.fetchall()
-
-            else:
-                tk.messagebox.showerror("Error", 'No BOM on record to check inventory')
-        for record in records:
-            if(record[0] not in useList):
-                nonUseList.add(record[0])
-        print("Items Used: ", useList)
-        print("Items Unused: ", nonUseList)
-        return
-    
-    def checkInventory(bom, useList, nonUseList):
-        bomTableName = "bom_" + str(bom)
-        sql = '''SELECT * FROM information_schema.tables WHERE table_name = %s''';
-        cur.execute(sql, [bomTableName])
-        records = cur.fetchall()
-        if(records):
-            sql = '''SELECT ManufacturerID FROM BOM_%s'''
-            cur.execute(sql, [bom])
-            records = cur.fetchall()
-            if(records):
-                for record in records:
-                    sql = '''SELECT bom_id from ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
-                    cur.execute(sql, [record[0]])
-                    bomRecords = cur.fetchall()
-                    
-                    # Check to see if item has it's own BOM, if so recursively call checkInventory()
-                    if(bomRecords[0][0] != None):
-                        print(bomRecords[0][0])
-                        useList.add(record[0])
-                        checkInventory(bomRecords[0][0], useList, nonUseList)
-
-                    else:
-                        sql = '''SELECT Quantity from ''' + DG.invDatabase + '''
-                                WHERE ManufacturerID = %s;'''
-                        cur.execute(sql, [record[0]])
-                        quantity = cur.fetchall()
-                        print("Manufacurer ID: ", record[0], "\nQuantity: ", quantity[0][0])
-                        
-                        sql = '''SELECT QuantityNeeded from BOM_%s WHERE ManufacturerID = %s'''
-                        cur.execute(sql, [bom, record[0]])
-                        bomQuantity = cur.fetchall()
-                        print("Required: ", bomQuantity[0][0])
-                        useList.add(record[0])
-                    
-        else:
-            errorMessage = 'No BOM found for BOM #' + str(bom) 
-            tk.messagebox.showerror('Error', errorMessage)
-        
-        
-    nameLabel = tk.Label(bomWindow, text = "Select item to create/edit BOM")
-    orLabel = tk.Label(bomWindow, text = "or", font = ('calibre', 12))
-    bomEntryLabel = tk.Label(bomWindow, text = "Type Manufacturer Numbers for \nBOM inventory check")
-    nameList = []
-    itemName = tk.StringVar()
-    sql = '''SELECT Description FROM ''' + DG.invDatabase + ''' ORDER BY Description'''
-    cur.execute(sql)
-    records = cur.fetchall()
-    for record in records:
-        nameList.append(record[0])
-    bomChoiceBox = ttk.Combobox(state='readonly', values = nameList, textvariable = itemName)
-    bomEntryBox = tk.Entry(bomWindow, width = 25)
-    createBomButton = tk.Button(bomWindow, text = "Create", command=createBom)
-    checkInventoryButton = tk.Button(bomWindow, text="Check Inventory", command=checkInventoryHelper)
-    returnButton = tk.Button(bomWindow, text = 'Return', command = lambda:[bomWindow.destroy(), adminMenu()])
-    
-    nameLabel.place(relx=.3, rely=.15, anchor = 'center')
-    orLabel.place(relx=.5, rely=.25, anchor='center')
-    bomEntryLabel.place(relx=.7, rely=.15, anchor='center')
-    bomEntryBox.place(relx=.7, rely=.3, anchor='center')
-    bomChoiceBox.place(relx=.3, rely=.3, anchor='center')
-    createBomButton.place(relx=.3, rely=.6, anchor = 'center')
-    checkInventoryButton.place(relx=.7, rely=.6, anchor='center')
-    returnButton.place(relx=.85, rely=.85, anchor='center')
-    bomEntryBox.focus_force()
-    
-    bomWindow.mainloop()
     return
 
 def viewBuilds():
@@ -1124,7 +790,6 @@ def checkOut():
         return
     
     def editItem():
-        
         selected = checkOutTree.item(checkOutTree.focus())
         if(selected['values'] == ''):
             tk.messagebox.showerror('Error', 'Please select an item to edit')
@@ -1335,6 +1000,7 @@ def checkOut():
         receiptScreen.mainloop()
         return
     
+    #barEntryCombobox =
     barEntryLabel = tk.Label(checkOutWindow, text = 'Barcode:', font = ('calibre', 12))
     quantityLabel = tk.Label(checkOutWindow, text = 'Quantity:', font = ('calibre', 12))
     barEntry = tk.Entry(checkOutWindow, width = 30)
@@ -1377,133 +1043,507 @@ def checkOut():
     
     return
 
-def inventoryBackup():
-    tk.messagebox.showinfo("Alert", "Will create folders for year and month within selected directory.")
-    saveFolder = filedialog.askdirectory()
-    if(saveFolder):
-        BU.createFile(saveFolder)
-        messageDialog = "Database successfully backed up to:\n" + saveFolder
-        tk.messagebox.showinfo("Success", messageDialog)
-    return
-
-
-def adminBuildMenu():
-    cur = DG.conn.cursor()
-    adminBuildMenuWindow = tk.Tk()
-    adminBuildMenuWindow.geometry("400x200")
-    adminBuildMenuWindow.title("Build Menu (Admin)")
-    adminBuildMenuWindow.focus_force()
-    
-    def buildSelectionAdmin(*args):
-        adminBuildMenu = tk.Tk()
-        adminBuildMenu.geometry("600x350")
-        buildName = buildListBox.get(buildListBox.curselection())
-        adminBuildMenu.title(buildName)
-        adminBuildMenu.focus_force()
+def Admin(location):
+    #Function definitions for Admin Menu Items
+    def adminBuildMenu():
+        cur = DG.conn.cursor()
+        adminBuildMenuWindow = tk.Tk()
+        adminBuildMenuWindow.geometry("400x200")
+        adminBuildMenuWindow.title("Build Menu (Admin)")
+        adminBuildMenuWindow.focus_force()
         
-        def fillBuildTree(rec):
-            buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
-            return
-        
-        def deleteBuild():
-            print('Delete Build ' + buildName)
-            return
-        
-        sql = '''SELECT * FROM ''' + buildName + ''' ORDER BY timeadded;'''
-        cur.execute(sql)
-        selectedBuildRecords = cur.fetchall()
-        
-        buildNameLabel = tk.Label(adminBuildMenu, text = buildName, font = ('calibre', 12, 'bold'))
-        buildTree = ttk.Treeview(adminBuildMenu, selectmode = 'browse')
-        buildTreeScrollbar = tk.Scrollbar(adminBuildMenu, orient='vertical', command = buildTree.yview)
-        deleteBuildButton = tk.Button(adminBuildMenu, text='Delete Build', command = deleteBuild)
-        
-        buildNameLabel.place(relx=.5, rely=.07, anchor='center')
-        buildTree.place(relx=.5, rely=.45, anchor = 'center')
-        buildTreeScrollbar.place(relx=.89, rely=.45, anchor = 'center')
-        deleteBuildButton.place(relx=.75, rely=.9, anchor='center')
-        
-        buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
-        buildTree["columns"] = ("1", "2", "3", "4")
-        buildTree['show'] = 'headings' 
-        buildTree.column("1", width = 100, anchor = 'w')
-        buildTree.column("2", width = 200, anchor = 'w')
-        buildTree.column("3", width = 60, anchor = 'w')
-        buildTree.column("4", width = 130, anchor = 'w')
-        buildTree.heading("1", text = "Manufacturer #")
-        buildTree.heading("2", text = "Description")
-        buildTree.heading("3", text = "Quantity")
-        buildTree.heading("4", text = "Time added")
-        for rec in selectedBuildRecords:    
-            fillBuildTree(rec)
-        
-        return
-
-    buildScrollbar = tk.Scrollbar(adminBuildMenuWindow)
-    buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
-    buildListBox.config(yscrollcommand = buildScrollbar.set)
-    sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
-    cur.execute(sql)
-    buildNameRecords = cur.fetchall()
-    if(buildNameRecords):
-        for i in range(len(buildNameRecords)):
-            buildListBox.insert(i, buildNameRecords[i][0])
+        def buildSelectionAdmin(*args):
+            adminBuildMenu = tk.Tk()
+            #print("X: ", adminBuildMenuWindow.winfo_x(), "Y: ", adminBuildMenuWindow.winfo_y())
+            subWindow_x = str(adminBuildMenuWindow.winfo_x() + 100)
+            subWindow_y = str(adminBuildMenuWindow.winfo_y() + 50)
+            windowPosition = subWindow_x + "+" + subWindow_y
+            adminBuildMenu.geometry("600x350" + "+" + windowPosition)
+            buildName = buildListBox.get(buildListBox.curselection())
+            adminBuildMenu.title(buildName)
+            adminBuildMenu.focus_force()
             
-    buildListBox.place(relx=.5, rely=.4, anchor='center')
-    buildScrollbar.place(relx=.73, rely=.4, anchor='center')
-    buildListBox.bind('<Double-1>', buildSelectionAdmin)
-    
+            def fillBuildTree(rec):
+                buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
+                return
+            
+            def deleteBuild():
+                print('Delete Build ' + buildName)
+                return
+            
+            sql = '''SELECT * FROM ''' + buildName + ''' ORDER BY timeadded;'''
+            cur.execute(sql)
+            selectedBuildRecords = cur.fetchall()
+            
+            buildNameLabel = tk.Label(adminBuildMenu, text = buildName, font = ('calibre', 12, 'bold'))
+            buildTree = ttk.Treeview(adminBuildMenu, selectmode = 'browse')
+            buildTreeScrollbar = tk.Scrollbar(adminBuildMenu, orient='vertical', command = buildTree.yview)
+            deleteBuildButton = tk.Button(adminBuildMenu, text='Delete Build', command = deleteBuild)
+            
+            buildNameLabel.place(relx=.5, rely=.07, anchor='center')
+            buildTree.place(relx=.5, rely=.45, anchor = 'center')
+            buildTreeScrollbar.place(relx=.89, rely=.45, anchor = 'center')
+            deleteBuildButton.place(relx=.75, rely=.9, anchor='center')
+            
+            buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
+            buildTree["columns"] = ("1", "2", "3", "4")
+            buildTree['show'] = 'headings' 
+            buildTree.column("1", width = 100, anchor = 'w')
+            buildTree.column("2", width = 200, anchor = 'w')
+            buildTree.column("3", width = 60, anchor = 'w')
+            buildTree.column("4", width = 130, anchor = 'w')
+            buildTree.heading("1", text = "Manufacturer #")
+            buildTree.heading("2", text = "Description")
+            buildTree.heading("3", text = "Quantity")
+            buildTree.heading("4", text = "Time added")
+            for rec in selectedBuildRecords:    
+                fillBuildTree(rec)
+            
+            adminBuildMenu.mainloop()
+            return
 
-def adminMenu():
-    adminMenuWindow = tk.Tk()
-    adminMenuWindow.title("Admin Menu")
-    adminMenuWindow.geometry("600x400")
-    adminMenuWindow.focus_force()
+        buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
+        buildScrollbar = tk.Scrollbar(adminBuildMenuWindow)
+        sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
+        cur.execute(sql)
+        buildNameRecords = cur.fetchall()
+        returnButton = tk.Button(adminBuildMenuWindow, text = "Return", command = lambda:[adminBuildMenuWindow.destroy(), adminMenu()])
     
-    backupButton = ttk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
-    removeButton = ttk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
-    bomButton = ttk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
-    buildButton = ttk.Button(adminMenuWindow, text = "Builds", command = lambda: [adminMenuWindow.destroy(), adminBuildMenu()])
-    homeButton = ttk.Button(adminMenuWindow, text = "Home", command = lambda:[adminMenuWindow.destroy(), mainMenu()])
-    
-    backupButton.place(relx=.5, rely=.4, anchor='center')
-    removeButton.place(relx=.5, rely=.5, anchor='center')
-    bomButton.place(relx=.5, rely=.6, anchor='center')
-    buildButton.place(relx=.5, rely=.7, anchor='center')
-    homeButton.place(relx=.75, rely=.85, anchor='center')
-    return
+        buildListBox.place(relx=.5, rely=.4, anchor='center')
+        if(buildNameRecords):
+            for i in range(len(buildNameRecords)):
+                buildListBox.insert(i, buildNameRecords[i][0])
+        buildScrollbar.place(relx=.7, rely=.4, anchor='center')
+        buildListBox.config(yscrollcommand = buildScrollbar.set)
+        buildListBox.bind('<Double-1>', buildSelectionAdmin)
+        returnButton.place(relx=.8, rely=.85, anchor = 'center')
+        adminBuildMenuWindow.mainloop()
+        return
+        
+    def adminMenu(location):
+        adminMenuWindow = tk.Tk()
+        adminMenuWindow.title("Admin Menu")
+        adminMenuWindow.geometry("600x400+" + location)
+        adminMenuWindow.focus_force()
+        
+        backupButton = ttk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
+        removeButton = ttk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
+        bomButton = ttk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
+        buildButton = ttk.Button(adminMenuWindow, text = "Builds", command = lambda: [adminMenuWindow.destroy(), adminBuildMenu()])
+        homeButton = ttk.Button(adminMenuWindow, text = "Home", command = lambda:[adminMenuWindow.destroy(), mainMenu()])
+        
+        backupButton.place(relx=.5, rely=.4, anchor='center')
+        removeButton.place(relx=.5, rely=.5, anchor='center')
+        bomButton.place(relx=.5, rely=.6, anchor='center')
+        buildButton.place(relx=.5, rely=.7, anchor='center')
+        homeButton.place(relx=.75, rely=.85, anchor='center')
+        
+        adminMenuWindow.mainloop()
+        return
 
-def adminLogin():
-    adminLoginWindow = tk.Tk()
-    adminLoginWindow.title("Admin Login")
-    adminLoginWindow.geometry("400x200")
-    userPass = tk.StringVar()
-    
-    def loginCheck():
-        password = b'$2b$12$STTqL.4AVbfd9eY3YFrl8uSsBaYdL8mupGcdRQRGmE7AH0h0Ag9am'
-        userPass = passEntry.get()
-        passBytes = userPass.encode('utf-8')
-        #passHash = bcrypt.hashpw(passBytes, bcrypt.gensalt())
-        if bcrypt.checkpw(passBytes, password):    
-            adminLoginWindow.destroy()
-            adminMenu()
-        else:
-            tk.messagebox.showerror("Error", "Incorrect password entered")
+    def adminLogin():
+        adminLoginWindow = tk.Tk()
+        adminLoginWindow.title("Admin Login")
+        adminLoginWindow.geometry("400x200+" + location)
+        userPass = tk.StringVar()
+        
+        def loginCheck():
+            password = b'$2b$12$STTqL.4AVbfd9eY3YFrl8uSsBaYdL8mupGcdRQRGmE7AH0h0Ag9am'
+            userPass = passEntry.get()
+            passBytes = userPass.encode('utf-8')
+            #passHash = bcrypt.hashpw(passBytes, bcrypt.gensalt())
+            if bcrypt.checkpw(passBytes, password): 
+                subWindow_x = str(adminLoginWindow.winfo_x() + 100)
+                subWindow_y = str(adminLoginWindow.winfo_y() + 50)
+                subWindowLoc = subWindow_x + "+" + subWindow_y
+                adminLoginWindow.destroy()
+                adminMenu(subWindowLoc)
+            else:
+                tk.messagebox.showerror("Error", "Incorrect password entered")
+            return
+        
+        adminLabel = tk.Label(adminLoginWindow, text = "Administrator", font = ('calibre', 12))
+        passLabel = tk.Label(adminLoginWindow, text = "Password: ", font = ('calibre', 12))
+        passEntry = tk.Entry(adminLoginWindow, show='*', textvariable = userPass)
+        passEntry.focus_force()
+        loginButton = tk.Button(adminLoginWindow, text = "Login", command = loginCheck)
+        homeButton = tk.Button(adminLoginWindow, text = "Home", command = lambda: [adminLoginWindow.destroy(), mainMenu()])
+        passEntry.bind("<Return>", lambda e : loginCheck())
+        
+        adminLabel.place(relx=.5, rely=.3, anchor = 'center')
+        passLabel.place(relx=.3, rely=.5, anchor='center')
+        passEntry.place(relx=.6, rely=.5, anchor='center')
+        loginButton.place(relx=.5, rely=.75, anchor='center')
+        homeButton.place(relx=.85, rely=.85, anchor='center')
+        
+        adminLoginWindow.mainloop()
         return
     
-    adminLabel = tk.Label(adminLoginWindow, text = "Administrator", font = ('calibre', 12))
-    passLabel = tk.Label(adminLoginWindow, text = "Password: ", font = ('calibre', 12))
-    passEntry = tk.Entry(adminLoginWindow, show='*', textvariable = userPass)
-    passEntry.focus_force()
-    loginButton = tk.Button(adminLoginWindow, text = "Login", command = loginCheck)
-    homeButton = tk.Button(adminLoginWindow, text = "Home", command = lambda: [adminLoginWindow.destroy(), mainMenu()])
-    passEntry.bind("<Return>", lambda e : loginCheck())
+    def createBOMGUI():
+        bomWindow = tk.Tk()
+        bomWindow.geometry("600x200")
+        bomWindow.title("Bill of Materials")
+        cur = DG.conn.cursor()
+        
+        def createBOMID():
+            bomID = random.randrange(0, 10000)
+            sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_id = %s'''
+            cur.execute(sql, [bomID])
+            records = cur.fetchall()
+            if(records):
+                createBOMID()
+            else:
+                return(bomID)
+        
+        def createBom():
+            if(not itemName.get()):
+                tk.messagebox.showerror("Error", 'Please select an item')
+                return
+            bomWindow.destroy()
+            createBomWindow = tk.Tk()
+            createBomWindow.title("Create BOM")
+            createBomWindow.geometry("600x400")
+            
+            def addBomItem():
+                inv, loc = DG.searchID(manIDEntry.get().lower())
+                sql = '''SELECT manufacturerid FROM ''' + DG.invDatabase + ''' WHERE bom_id = %s'''
+                cur.execute(sql, [bomID])
+                selfID = cur.fetchall()
+                if(selfID):
+                    selfID = selfID[0][0]
+                try:
+                    quant = int(quantityEntry.get())
+                except ValueError:
+                    tk.messagebox.showerror("Error", "Quantity must be an integer value")
+                    quantityEntry.delete(0, tk.END)
+                    quantityEntry.focus_force()
+                    return
+                if(not inv):
+                    tk.messagebox.showerror("Error", "Manufacturer Number not found")
+                elif(quant < 1):
+                    tk.messagebox.showerror("Error", "Please enter a quantity greater than zero")
+                elif(manIDEntry.get().lower() == selfID):
+                    tk.messagebox.showerror("Error", "Cannot add item to it's own BOM")
+                else:
+                    bomTree.insert("", 'end', values=(manIDEntry.get().lower(), quant))
+                manIDEntry.delete(0, tk.END)
+                quantityEntry.delete(0, tk.END)
+                manIDEntry.focus_force()
+                return
+            
+            def remBomItem():
+                selected = bomTree.selection()[0]
+                bomTree.delete(selected)
+                return
+            
+            def finalize():
+                # CREATING BOM TABLE
+                tableName = "bom_" + str(bomID)
+                sql = '''CREATE TABLE IF NOT EXISTS ''' + tableName + '''(
+                            ManufacturerID VARCHAR(100),
+                            QuantityNeeded SMALLINT
+                        );'''
+                cur.execute(sql)
+                
+                if(edit):
+                    sql = '''DELETE FROM ''' + tableName + ''';'''
+                    cur.execute(sql)
+                else:
+                    # INSERTING BOM_ID# and BOM_NAME INTO BOM TABLE OF TABLES
+                    sql = '''INSERT INTO ''' + DG.bomDatabase + ''' (bom_id, bom_name) VALUES (%s, %s);'''
+                    cur.execute(sql, [bomID, itemName.get()])
+                    sql = '''UPDATE ''' + DG.invDatabase + ''' SET bom_id = %s WHERE name = %s'''
+                    cur.execute(sql, [bomID, itemName.get()])
+                # INSERTING ALL MANUFACTURER IDS AND QUANTITIES
+                for line in bomTree.get_children():
+                    sql = '''INSERT INTO ''' + tableName + '''(ManufacturerID, QuantityNeeded) VALUES (%s, %s);'''
+                    cur.execute(sql, [bomTree.item(line).get('values')[0], bomTree.item(line).get('values')[1]])
+                
+                # Show success box before transfer back
+                tk.messagebox.showinfo("Success", 'Bill of Materials saved')
+                createBomWindow.destroy()
+                mainMenu()          
+                return
+                
+            manIDLabel = tk.Label(createBomWindow, text = "Manufacturer Number:", font=('calibre', 12))
+            manIDEntry = tk.Entry(createBomWindow, width = 30)
+            quantityLabel = tk.Label(createBomWindow, text = "Quantity:", font=('calibre', 12))
+            quantityEntry = tk.Entry(createBomWindow, width = 5)
+            bomTree = ttk.Treeview(createBomWindow, selectmode = 'browse')
+            completeBomButton = tk.Button(createBomWindow, text = "Finalize", command = finalize)
+            addItemButton = tk.Button(createBomWindow, text = "Add Item", command = lambda:[addBomItem()])
+            removeItemButton = tk.Button(createBomWindow, text = "Remove Item", command = lambda:[remBomItem()])
+            bomScrollbar = tk.Scrollbar(createBomWindow, orient='vertical', command = bomTree.yview)
+            returnButton = tk.Button(createBomWindow, text = 'Return', command = lambda:[createBomWindow.destroy(), createBOMGUI()])
+            
+            manIDEntry.focus_force()
+            manIDEntry.bind('<Return>', lambda e: addBomItem())
+            quantityEntry.bind('<Return>', lambda e: addBomItem())
+            
+            manIDLabel.place(relx=.15, rely=.1, anchor='center')
+            manIDEntry.place(relx=.4, rely=.1, anchor = 'center')
+            quantityLabel.place(relx=.56, rely=.1, anchor='center')
+            quantityEntry.place(relx=.66, rely=.1, anchor = 'center')
+            addItemButton.place(relx=.8, rely=.1, anchor = 'center')
+            removeItemButton.place(relx=.35, rely=.8, anchor = 'center')
+            bomTree.place(relx=.5, rely=.45, anchor = 'center')
+            bomScrollbar.place(relx=.65, rely=.45, anchor = 'center')
+            completeBomButton.place(relx=.65, rely=.8, anchor = 'center')
+            returnButton.place(relx = .5, rely=.9, anchor='center')
+            
+            bomTree.configure(yscrollcommand = bomScrollbar.set)
+            bomTree["columns"] = ("1", "2")
+            bomTree['show'] = 'headings' 
+            bomTree.column("1", width = 100, anchor = 'w')
+            bomTree.column("2", width = 100, anchor = 'w')
+            bomTree.heading("1", text = "Manufacturer Number")
+            bomTree.heading("2", text = "Quantity")
+                
+            # USE FOR EDITING BOM
+            # FILLS TREE WITH INFORMATION ALREADY IN DATABASE        
+            sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_name = %s'''
+            cur.execute(sql, [itemName.get()])
+            records = cur.fetchall()
+            edit = 0
+            if(records):
+                edit = 1
+                bomID = records[0][0]
+                tableName = "bom_" + str(bomID)
+                sql = '''SELECT * FROM ''' + tableName + ''';'''
+                cur.execute(sql)
+                records = cur.fetchall()
+                if(records):
+                    for record in records:
+                        bomTree.insert("", 'end', values=(record[0], record[1]))
+            else:
+                bomID = createBOMID()
+
+            createBomWindow.mainloop()
+            return
+        
+        # useList and nonUseList are what is and isn't used in the inventory to make a particular bom
+        def checkInventoryHelper():
+            useList, nonUseList = set([]), set([])
+            bomString = bomEntryBox.get()
+            bomList = [i.strip() for i in bomString.split(",")]
+            for bom in bomList:
+                sql = '''SELECT bom_id FROM ''' + DG.bomDatabase + ''' WHERE bom_name = %s;'''
+                cur.execute(sql, [bom])
+                records = cur.fetchall()
+                if(records):
+                    bomIDNum = records[0][0]
+                    checkInventory(bomIDNum, useList, nonUseList)
+                    sql = '''SELECT * FROM ''' + DG.invDatabase + ''';'''
+                    cur.execute(sql)
+                    records = cur.fetchall()
+
+                else:
+                    tk.messagebox.showerror("Error", 'No BOM on record to check inventory')
+            for record in records:
+                if(record[0] not in useList):
+                    nonUseList.add(record[0])
+            print("Items Used: ", useList)
+            print("Items Unused: ", nonUseList)
+            return
+        
+        def checkInventory(bom, useList, nonUseList):
+            bomTableName = "bom_" + str(bom)
+            sql = '''SELECT * FROM information_schema.tables WHERE table_name = %s''';
+            cur.execute(sql, [bomTableName])
+            records = cur.fetchall()
+            if(records):
+                sql = '''SELECT ManufacturerID FROM BOM_%s'''
+                cur.execute(sql, [bom])
+                records = cur.fetchall()
+                if(records):
+                    for record in records:
+                        sql = '''SELECT bom_id from ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
+                        cur.execute(sql, [record[0]])
+                        bomRecords = cur.fetchall()
+                        
+                        # Check to see if item has it's own BOM, if so recursively call checkInventory()
+                        if(bomRecords[0][0] != None):
+                            print(bomRecords[0][0])
+                            useList.add(record[0])
+                            checkInventory(bomRecords[0][0], useList, nonUseList)
+
+                        else:
+                            sql = '''SELECT Quantity from ''' + DG.invDatabase + '''
+                                    WHERE ManufacturerID = %s;'''
+                            cur.execute(sql, [record[0]])
+                            quantity = cur.fetchall()
+                            print("Manufacurer ID: ", record[0], "\nQuantity: ", quantity[0][0])
+                            
+                            sql = '''SELECT QuantityNeeded from BOM_%s WHERE ManufacturerID = %s'''
+                            cur.execute(sql, [bom, record[0]])
+                            bomQuantity = cur.fetchall()
+                            print("Required: ", bomQuantity[0][0])
+                            useList.add(record[0])
+                        
+            else:
+                errorMessage = 'No BOM found for BOM #' + str(bom) 
+                tk.messagebox.showerror('Error', errorMessage)
+            
+        def returnHelper():
+            subWindow_x = str(bomWindow.winfo_x() + 100)
+            subWindow_y = str(bomWindow.winfo_y() + 50)
+            subWindowLoc = subWindow_x + "+" + subWindow_y
+            bomWindow.destroy()
+            adminMenu(subWindowLoc)
+            return
+            
+        nameLabel = tk.Label(bomWindow, text = "Select item to create/edit BOM")
+        orLabel = tk.Label(bomWindow, text = "or", font = ('calibre', 12))
+        bomEntryLabel = tk.Label(bomWindow, text = "Type Manufacturer Numbers for \nBOM inventory check")
+        nameList = []
+        itemName = tk.StringVar()
+        sql = '''SELECT Description FROM ''' + DG.invDatabase + ''' ORDER BY Description'''
+        cur.execute(sql)
+        records = cur.fetchall()
+        for record in records:
+            nameList.append(record[0])
+        bomChoiceBox = ttk.Combobox(state='readonly', values = nameList, textvariable = itemName)
+        bomEntryBox = tk.Entry(bomWindow, width = 25)
+        createBomButton = tk.Button(bomWindow, text = "Create", command=createBom)
+        checkInventoryButton = tk.Button(bomWindow, text="Check Inventory", command=checkInventoryHelper)
+        returnButton = tk.Button(bomWindow, text = 'Return', command = returnHelper)
+        
+        nameLabel.place(relx=.3, rely=.15, anchor = 'center')
+        orLabel.place(relx=.5, rely=.25, anchor='center')
+        bomEntryLabel.place(relx=.7, rely=.15, anchor='center')
+        bomEntryBox.place(relx=.7, rely=.3, anchor='center')
+        bomChoiceBox.place(relx=.3, rely=.3, anchor='center')
+        createBomButton.place(relx=.3, rely=.6, anchor = 'center')
+        checkInventoryButton.place(relx=.7, rely=.6, anchor='center')
+        returnButton.place(relx=.85, rely=.85, anchor='center')
+        bomEntryBox.focus_force()
+        
+        bomWindow.mainloop()
+        return
     
-    adminLabel.place(relx=.5, rely=.3, anchor = 'center')
-    passLabel.place(relx=.3, rely=.5, anchor='center')
-    passEntry.place(relx=.6, rely=.5, anchor='center')
-    loginButton.place(relx=.5, rely=.75, anchor='center')
-    homeButton.place(relx=.85, rely=.85, anchor='center')
+    def inventoryBackup():
+        tk.messagebox.showinfo("Alert", "Will create folders for year and month within selected directory.")
+        saveFolder = filedialog.askdirectory()
+        if(saveFolder):
+            BU.createFile(saveFolder)
+            messageDialog = "Database successfully backed up to:\n" + saveFolder
+            tk.messagebox.showinfo("Success", messageDialog)
+        return
+    
+    def removeItem():
+        removeItemWindow = tk.Tk()
+        removeItemWindow.geometry("600x150")
+        removeItemWindow.title("Remove Item")
+        removeVar = tk.StringVar()
+        cur = DG.conn.cursor()
+        
+        def itemRemoval(item_to_remove):
+            sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
+            cur.execute(sql, [item_to_remove])
+            records = cur.fetchall()
+            if(records):
+                sql = '''DELETE FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
+                cur.execute(sql, [item_to_remove])
+                sql = '''DELETE FROM ''' + DG.locDatabase + ''' WHERE Barcode = %s'''
+                cur.execute(sql, [records[0][6]])
+                sql = '''DELETE FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
+                cur.execute(sql, [records[0][6]])
+                
+                message = "Item:", item_to_remove, 'deleted'
+                tk.messagebox.showinfo("Success", message)
+                removeItemEntry.delete(0, tk.END)
+            else:
+                tk.messagebox.showerror('Error', 'Item not found in inventory')
+            return
+                
+        def removeCheckHelper(*args):
+            manIDPartial = '%' + removeItemEntry.get().lower() + '%'
+            sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE manufacturerid ILIKE %s'''
+            cur.execute(sql, [manIDPartial])
+            invRecords = cur.fetchall()
+            if(invRecords):
+                removeItemWindow.geometry("600x400")
+                removeItemLabel.place(relx=.01, rely=.15)
+                removeItemEntry.place(relx=.48, rely=.15, anchor='center')
+                searchButton.place(relx=.7, rely=.15, anchor='center')
+
+                def fillRemoveTree():
+                    for record in invRecords:
+                        removeTree.insert("", 'end', values=(record[0], record[4], record[6], record[5]))     #manID, name, barcode, quantity))
+                    return
+                
+                def removeCheck():
+                    #Double check that item should actually be removed
+                    removeCheckWindow = tk.Tk()
+                    removeCheckWindow.geometry("400x200")
+                    removeCheckWindow.title("Are you sure?")
+                    removeCheckWindow.focus_force()
+                    
+                    item_to_remove = removeTree.item(removeTree.focus())['values'][0]
+                    removeText = "Are you sure you want to remove item: " + item_to_remove
+                    removeLabel = tk.Label(removeCheckWindow, text = removeText, font = ('calibre', 12))
+                    yesButton = tk.Button(removeCheckWindow, text = "Yes", command = lambda: [itemRemoval(item_to_remove), removeCheckWindow.destroy()])
+                    noButton = tk.Button(removeCheckWindow, text = "No", command = removeCheckWindow.destroy)
+                    removeItemEntry.unbind('<Return>')
+                    removeCheckWindow.bind('<Return>', lambda event:[itemRemoval(removeVar.get()), removeCheckWindow.destroy(), removeItemEntry.bind('<Return>', lambda e: removeCheck())])
+                    
+                    removeLabel.place(relx=.5, rely=.3, anchor='center')
+                    yesButton.place(relx=.2, rely=.6, anchor = 'center')
+                    noButton.place(relx=.8, rely=.6, anchor='center')   
+                    
+                    removeCheckWindow.mainloop()
+                    return
+                
+                removeTree = ttk.Treeview(removeItemWindow, selectmode = 'browse')
+                removeTreeScrollbar = tk.Scrollbar(removeItemWindow, orient='vertical', command = removeTree.yview)
+                
+                removeTreeScrollbar.place(relx=.84, rely=.55, anchor = 'w')
+                removeTree.place(relx=.1, rely=.55, anchor = 'w')
+                returnButton.place(relx=.85, rely=.9, anchor='center')
+                removeButton = tk.Button(removeItemWindow, text = 'Delete', command = removeCheck)
+                removeButton.place(relx= .5, rely=.9, anchor='center')
+
+                removeTree.configure(yscrollcommand = removeTreeScrollbar.set)
+                removeTree["columns"] = ("1", "2", "3", "4")
+                removeTree['show'] = 'headings' 
+                removeTree.column("1", width = 100, anchor = 'w')
+                removeTree.column("2", width = 200, anchor = 'w')
+                removeTree.column("3", width = 100, anchor = 'w')
+                removeTree.column("4", width = 60, anchor = 'w')
+                removeTree.heading("1", text = "Manufacturer #")
+                removeTree.heading("2", text = "Description")
+                removeTree.heading("3", text = "Barcode")
+                removeTree.heading("4", text = "Quantity")
+                fillRemoveTree()
+            return
+
+        def returnHelper():
+            subWindow_x = str(removeItemWindow.winfo_x() + 100)
+            subWindow_y = str(removeItemWindow.winfo_y() + 50)
+            subWindowLoc = subWindow_x + "+" + subWindow_y
+            removeItemWindow.destroy() 
+            adminMenu(subWindowLoc)
+            return
+
+        removeVar.trace_add('write', removeCheckHelper)
+        removeItemLabel = tk.Label(removeItemWindow, text = "Manufacturer Number:", font=('calibre', 12, 'bold'))
+        removeItemEntry = tk.Entry(removeItemWindow, textvariable = removeVar, font=('calibre', 12))
+        
+        searchButton = tk.Button(removeItemWindow, text = 'Search', command = removeCheckHelper)
+        removeItemEntry.bind('<Return>', lambda e: removeCheckHelper())
+        
+        returnButton = tk.Button(removeItemWindow, text = 'Return', command = returnHelper)
+        
+        removeItemLabel.place(relx=.01, rely=.4, anchor='w')
+        removeItemEntry.place(relx=.48, rely=.4, anchor='center')
+        searchButton.place(relx=.7, rely=.4, anchor='center')
+        returnButton.place(relx=.85, rely=.85, anchor='center')
+        
+        removeItemEntry.focus_force()
+        removeItemWindow.mainloop()
+        return
+    
+    adminLogin()
     
     return
 
@@ -1553,7 +1593,6 @@ def mainMenu():
     searchType = tk.StringVar()
     mainMenuWindow.focus_force()
     
-    # When SQL server is connected, use this instead of dummy list below
     choiceList = ['Barcode', 'Manufacturer Number', 'Item Name']
     
     searchChoiceBox = ttk.Combobox(
@@ -1583,8 +1622,10 @@ def mainMenu():
             
             def listBoxSelection(*listBoxArgs):
                 itemIndex = args[0].curselection()[0]
-                #mainMenuWindow.destroy()
-                adjustItemGUI(records[itemIndex][0])
+                subWindow_x = str(mainMenuWindow.winfo_x() + 100)
+                subWindow_y = str(mainMenuWindow.winfo_y() + 50)
+                subWindowLoc = subWindow_x + "+" + subWindow_y
+                adjustItemGUI(records[itemIndex][0], subWindowLoc)
                 return
             selectButton = tk.Button(mainMenuWindow, text = 'Select Item', command = listBoxSelection)
             selectButton.place(relx=.9, rely=.4, anchor='center')
@@ -1615,8 +1656,11 @@ def mainMenu():
         return
     
     def adminMenuHelper():
+        subWindow_x = str(mainMenuWindow.winfo_x() + 100)
+        subWindow_y = str(mainMenuWindow.winfo_y() + 50)
+        subWindowLoc = subWindow_x + "+" + subWindow_y
         mainMenuWindow.destroy()
-        adminLogin()
+        Admin(subWindowLoc)
         return
     
     def barcodeSearchHelper():
@@ -1637,9 +1681,11 @@ def mainMenu():
                 sql = '''SELECT ManufacturerID FROM ''' + DG.invDatabase + ''' WHERE Barcode = %s'''
                 cur.execute(sql, [records[0][0]])
                 records = cur.fetchall()
-                #mainMenuWindow.destroy()
+                subWindow_x = str(mainMenuWindow.winfo_x() + 100)
+                subWindow_y = str(mainMenuWindow.winfo_y() + 50)
+                subWindowLoc = subWindow_x + "+" + subWindow_y
                 searchInventoryEntry.delete(0, tk.END)
-                adjustItemGUI(records[0][0])
+                adjustItemGUI(records[0][0], subWindowLoc)
                 
         else:
             print("Made it to barcodeSearch but searchType was not Barcode")
@@ -1649,10 +1695,6 @@ def mainMenu():
     searchVar.trace_add('write', searchHelper)
     searchInventoryLabel = tk.Label(mainMenuWindow, text='Search', font=('calibre', 12, 'bold'))
     searchInventoryEntry = tk.Entry(mainMenuWindow, textvariable = searchVar, font=('calibre', 12))  
-    #
-    # THIS GETS CALLED NO MATTER WHAT IF THE USER HITS ENTER ON A SEARCH
-    # CREATE HELPER FUNCTION TO REDIRECT IF IT'S NOT A BARCODE
-    #
     searchInventoryEntry.bind('<Return>', lambda e: barcodeSearchHelper())     
     searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
     addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [addItemGUI()])
