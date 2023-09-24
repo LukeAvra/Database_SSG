@@ -16,6 +16,21 @@ from datetime import datetime
 import shutil
 import Database_Globals as DG
 
+def doubleCheck():
+    DG.main()
+    cur = DG.conn.cursor()
+    dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
+    filePath = os.path.dirname(__file__) + "\\Database Backup\\BarTest" + dt_str + ".txt"
+    barFile = open(filePath, 'w')
+    
+    sql = '''SELECT manufacturerid FROM ssg_inventory ORDER BY manufacturerid;'''
+    cur.execute(sql)
+    records = cur.fetchall()
+    for record in records:
+        barFile.write(record[0] + "\n")
+    
+    return
+
 def accessBackup():
     basePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra\\Access Backup"
     dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
@@ -24,8 +39,12 @@ def accessBackup():
     return
 
 def insertion(sqlFile, database):
+    if(database == 'barcodes'):
+        order = 'code'
+    else:
+        order = 'barcode'
     cur = DG.conn.cursor()
-    sql = '''SELECT * FROM ''' + database + ''';'''
+    sql = '''SELECT * FROM ''' + database + ''' ORDER BY ''' + order + ''';'''
     cur.execute(sql)
     records = cur.fetchall()
     for rec in records:
@@ -40,7 +59,7 @@ def createFile(basePath):
     month = datetime.now().strftime("%B")
     year= datetime.now().strftime("%Y")
     dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
-    dbList = [DG.invDatabase, DG.locDatabase, DG.userDatabase, DG.bomDatabase, DG.barDatabase]
+    dbList = [DG.invDatabase, DG.locDatabase, DG.barDatabase]
     
     if(not os.path.exists(basePath + "\\" + year)):
         os.mkdir(basePath + "\\" + year)
@@ -55,10 +74,23 @@ def createFile(basePath):
 
 def share():
     basePath = "C:\\Users\\Luke\\Special Services Group, LLC\\SSG Customer Access - Documents\\Avra\\Database Backup"
-    createFile(basePath)
+    try:
+        createFile(basePath)
+    except Exception as error:
+        print("An error has occured: ", error)
     
-    basePath = r"\\DESKTOP-NTLGQ4N\Avra\Backup"
-    createFile(basePath)
+    # Pulling this server down
+    # Wasn't working prior to pulling down though, it wasn't showing up in the network folder
+    # May have something to do with setting up a new usb with same name? Can't recall if I did that
+# =============================================================================
+# 
+#     basePath = r"\\DESKTOP-NTLGQ4N\Avra\Backup"
+#     try:
+#         createFile(basePath)
+#     except Exception as error:
+#         print("An error has occured: ", error)
+# =============================================================================
+
     return
     
 def local():
@@ -113,6 +145,7 @@ def deletionCall():
 def main(): 
     backupCall()
     deletionCall()
+    #doubleCheck()
     return
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ Created on Wed Jun 28 12:34:34 2023
 import psycopg2
 #from config import config, configDBVars
 import config
+import random
 from os import system, name
 
 # Basic connection test, returns PostgreSQL DB version
@@ -40,9 +41,9 @@ def clear():
         x = system('clear')
         
 def createGlobalVars():
-    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, buildDatabase = config.configDBVars()
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, kitDatabase, rmaDatabase = config.configDBVars()
     #print(invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase)
-    return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, buildDatabase
+    return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, kitDatabase, rmaDatabase
 
 def roomList():
     cur = conn.cursor()
@@ -56,28 +57,29 @@ def roomList():
     return rooms
 
 def searchID(ID):
-    
-    # Too tired to look into this now but why is invDatabase called twice? Can't it just be called once and, 
-    # if the records exist, just call the locDatabase using records[0][5] or whichever one 'barcode' is??
     cur = conn.cursor()
-    sql = '''SELECT Barcode FROM ''' + invDatabase + '''
-            WHERE ManufacturerID = %s'''
+    sql = '''SELECT * FROM ''' + invDatabase + ''' WHERE barcode = %s;'''
     cur.execute(sql, [ID])
-    records = cur.fetchall()
-    if(records):
-        barcode = records[0][0]
-        
-        sql = '''SELECT * FROM ''' + invDatabase + '''
-               WHERE ManufacturerID = %s'''
-        cur.execute(sql, [ID])
-        invRecords = cur.fetchall()
-                
-        sql = '''SELECT * FROM ''' + locDatabase + '''
-               WHERE Barcode = %s'''
-        cur.execute(sql, [barcode])
-        locRecords = cur.fetchall()
-    else:
+    invRecords = cur.fetchall()
+    sql = '''SELECT * FROM ''' + locDatabase + ''' WHERE Barcode = %s;'''
+    cur.execute(sql, [ID])
+    locRecords = cur.fetchall()
+# =============================================================================
+#         barcode = records[0][0]
+#         
+#         sql = '''SELECT * FROM ''' + invDatabase + '''
+#                WHERE barcode = %s'''
+#         cur.execute(sql, [ID])
+#         invRecords = cur.fetchall()
+#                 
+#         sql = '''SELECT * FROM ''' + locDatabase + '''
+#                WHERE Barcode = %s'''
+#         cur.execute(sql, [barcode])
+#         locRecords = cur.fetchall()
+# =============================================================================
+    if(not invRecords):
         invRecords = None
+    if(not locRecords):
         locRecords = None
     
     return invRecords, locRecords
@@ -102,6 +104,34 @@ def searchTotal(ID, version):
     
     return invRecords, locRecords
 
+def createBarcode():
+    cur = conn.cursor()
+    barcodeList = []
+    barcodeString = ''
+    odds = 0
+    barcodeList.append(random.randrange(1, 10))
+    for i in range(0, 10):
+        barcodeList.append(random.randrange(0, 10))
+    for i in range(0, 11, 2):
+        odds = odds + barcodeList[i]
+    odds = odds * 3
+    for i in range(1, 10, 2):
+        odds = odds + barcodeList[i]            
+    if(odds % 10 != 0):
+        checkDigit = 10 - odds % 10
+    else:
+        checkDigit = 0
+        
+    for num in barcodeList:
+        barcodeString += str(num)
+    sqlCheck = barcodeString + str(checkDigit)        
+    sql = '''SELECT * FROM ''' + barDatabase + ''' WHERE code=%s'''
+    cur.execute(sql, [sqlCheck])
+    records = cur.fetchone()
+    if records:
+        createBarcode()
+    return sqlCheck
+
 def searchByName(searchItem):
     cur = conn.cursor()
     userInputItem = '%' + searchItem + '%'
@@ -118,9 +148,11 @@ def main():
     global bomDatabase
     global locDatabase
     global buildDatabase
+    global kitDatabase
+    global rmaDatabase
     conn = connect()
-    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, buildDatabase = createGlobalVars()
-
+    invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, kitDatabase, rmaDatabase = createGlobalVars()
+    
 if __name__ == '__main__':
     main()
     

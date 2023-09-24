@@ -1,3 +1,16 @@
+Common PSQL commands I don't want to type out every time:
+
+select * from ssg_inventory where manufacturerid ILIKE 'man%' order by manufacturerid;
+select * from ssg_inventory where barcode = '';
+select * from ssg_locations where barcode = '';
+select * from barcodes where code = '';
+
+
+
+
+
+
+
 autopytoexe:
 
 Files:
@@ -49,89 +62,3 @@ pyinstaller --noconfirm --onedir --console --hidden-import "tkinter" --hidden-im
 
 
 
-def adminBuildMenu():
-    cur = DG.conn.cursor()
-    adminBuildMenuWindow = tk.Tk()
-    adminBuildMenuWindow.geometry("400x200")
-    adminBuildMenuWindow.title("Build Menu (Admin)")
-    adminBuildMenuWindow.focus_force()
-    
-    def buildSelectionAdmin(*args):
-        #adminBuildMenuWindow.destroy()
-        adminBuildMenu = tk.Tk()
-        adminBuildMenu.geometry("400x400")
-        buildName = buildListBox.get(buildListBox.curselection())
-        adminBuildMenu.title(buildName)
-        adminBuildMenu.focus_force()
-        
-        
-        
-        return
-
-    buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
-    sql = '''SELECT build_name FROM ''' + DG.buildDatabase + ''';'''
-    cur.execute(sql)
-    buildNameRecords = cur.fetchall()
-    if(buildNameRecords):
-        for i in range(len(buildNameRecords)):
-            buildListBox.insert(i, buildNameRecords[i][0])
-            
-    buildListBox.place(relx=.5, rely=.4, anchor='center')
-            
-    buildListBox.bind('<Double-1>', buildSelectionAdmin)
-    
-
-def adminMenu():
-    adminMenuWindow = tk.Tk()
-    adminMenuWindow.title("Admin Menu")
-    adminMenuWindow.geometry("600x400")
-    adminMenuWindow.focus_force()
-    
-    backupButton = ttk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
-    removeButton = ttk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
-    bomButton = ttk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
-    buildButton = ttk.Button(adminMenuWindow, text = "Builds", command = lambda: [adminMenuWindow.destroy(), adminBuildMenu()])
-    homeButton = ttk.Button(adminMenuWindow, text = "Home", command = lambda:[adminMenuWindow.destroy(), mainMenu()])
-    
-    backupButton.place(relx=.5, rely=.4, anchor='center')
-    removeButton.place(relx=.5, rely=.5, anchor='center')
-    bomButton.place(relx=.5, rely=.6, anchor='center')
-    buildButton.place(relx=.5, rely=.7, anchor='center')
-    homeButton.place(relx=.75, rely=.85, anchor='center')
-    
-    
-    return
-
-def adminLogin():
-    adminLoginWindow = tk.Tk()
-    adminLoginWindow.title("Admin Login")
-    adminLoginWindow.geometry("400x200")
-    userPass = tk.StringVar()
-    
-    def loginCheck():
-        password = b'$2b$12$STTqL.4AVbfd9eY3YFrl8uSsBaYdL8mupGcdRQRGmE7AH0h0Ag9am'
-        userPass = passEntry.get()
-        passBytes = userPass.encode('utf-8')
-        #passHash = bcrypt.hashpw(passBytes, bcrypt.gensalt())
-        if bcrypt.checkpw(passBytes, password):    
-            adminLoginWindow.destroy()
-            adminMenu()
-        else:
-            tk.messagebox.showerror("Error", "Incorrect password entered")
-        return
-    
-    adminLabel = tk.Label(adminLoginWindow, text = "Administrator", font = ('calibre', 12))
-    passLabel = tk.Label(adminLoginWindow, text = "Password: ", font = ('calibre', 12))
-    passEntry = tk.Entry(adminLoginWindow, show='*', textvariable = userPass)
-    passEntry.focus_force()
-    loginButton = tk.Button(adminLoginWindow, text = "Login", command = loginCheck)
-    homeButton = tk.Button(adminLoginWindow, text = "Home", command = lambda: [adminLoginWindow.destroy(), mainMenu()])
-    passEntry.bind("<Return>", lambda e : loginCheck())
-    
-    adminLabel.place(relx=.5, rely=.3, anchor = 'center')
-    passLabel.place(relx=.3, rely=.5, anchor='center')
-    passEntry.place(relx=.6, rely=.5, anchor='center')
-    loginButton.place(relx=.5, rely=.75, anchor='center')
-    homeButton.place(relx=.85, rely=.85, anchor='center')
-    
-    return

@@ -95,7 +95,10 @@ def printBarcode():
         )
     
     # Send instructions to the printer
-    send(instructions=instructions, printer_identifier=printer, backend_identifier=backend, blocking=True)
+    try:
+        send(instructions=instructions, printer_identifier=printer, backend_identifier=backend, blocking=True)
+    except:
+        print("Error connecting to printer")
     
     return
 
