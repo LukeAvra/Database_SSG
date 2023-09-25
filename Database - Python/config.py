@@ -40,8 +40,9 @@ def configDBVars(filename=absolute_path, section='database_table_names'):
         locDatabase = parser[section]['location_table']
         kitDatabase = parser[section]['kit_table']
         rmaDatabase = parser[section]['rma_table']
+        buildDatabase = parser[section]['build_table']
 
-        return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, kitDatabase, rmaDatabase
+        return invDatabase, userDatabase, barDatabase, bomDatabase, locDatabase, kitDatabase, rmaDatabase, buildDatabase
 
 
 configDBVars()

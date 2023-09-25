@@ -44,68 +44,6 @@ def addItemGUI():
                       WHERE ManufacturerID = %s'''
             cur.execute(sql, [manIDCheck])
             records = cur.fetchall()
-# =============================================================================
-#         if records:
-#             kitCheckWindow = tk.Tk()
-#             subWindow_x = str(newItemWindow.winfo_x() + 100)
-#             subWindow_y = str(newItemWindow.winfo_y() + 50)
-#             windowPosition = subWindow_x + "+" + subWindow_y
-#             kitCheckWindow.geometry("200x200+" + windowPosition)
-#             
-#             def yesClick():
-#                 def createKit():
-#                     
-#                     return
-#                 
-#                 def kitSelected():
-#                     kitSelection = kitChoiceBox.get()
-#                     #TODO pulled in the selected kit, now adjust it in the sql database 
-#                     #
-#                     return
-#                 # Need to create seperate tables for RMAs and Builds
-#                 # Then create SQL statement to run through Builds populate this combobox list
-#                 kitSelection = tk.StringVar()
-#                 kitList = []
-#                 kitChoiceBox = ttk.Combobox(
-#                                     kitCheckWindow,
-#                                     state='readonly',
-#                                     values = kitList,
-#                                     textvariable=kitSelection
-#                                     )
-#                 selectButton = tk.Button(kitCheckWindow, text='Select', command=kitSelected)
-#                 
-#                 yesornoLabel.destroy()
-#                 yesButton.destroy()
-#                 noButton.destroy()
-#                 orLabel = tk.Label(kitCheckWindow, text='Or')
-#                 createKitButton = tk.Button(kitCheckWindow, text='Create New Kit', command=createKit)
-#                 
-#                 kitChoiceBox.place(relx=.35, rely=.4, anchor='center')
-#                 selectButton.place(relx=.65, rely=.4, anchor='center')
-#                 orLabel.place(relx=.5, rely=.5, anchor='center')
-#                 createKitButton.place(relx=.5, rely=.7, anchor='center')
-#                 
-#                 return
-#             
-#             def noClick():
-#                 newItemWindow.destroy()
-#                 kitCheckWindow.destroy()
-#                 adjustWindowLoc_x = str(newItemWindow.winfo_x() + 100)
-#                 adjustWindowLoc_y = str(newItemWindow.winfo_x() + 50)
-#                 adjustWindowLoc = adjustWindowLoc_x + "+" + adjustWindowLoc_y
-#                 adjustItemGUI(manIDCheck, adjustWindowLoc)
-#                 return
-#             
-#             yesornoLabel = tk.Label(kitCheckWindow, text='Item Found\nAdd New Item as part of kit?')
-#             yesButton = tk.Button(kitCheckWindow, text = 'Yes', command = yesClick)
-#             noButton = tk.Button(kitCheckWindow, text = 'No', command = noClick)
-#             
-#             yesornoLabel.place(relx=.5, rely=.4, anchor='center')
-#             yesButton.place(relx=.35, rely=.6, anchor='center')
-#             noButton.place(relx=.65, rely=.6, anchor='center')
-#             
-#             kitCheckWindow.mainloop()
-# =============================================================================
 
         return
     
@@ -138,7 +76,7 @@ def addItemGUI():
     # Could also be used to send warning when user tries to establish something without a data field
     def newItem():
         if(kitChoiceBox.get() == "None"):
-            kitChoice = 0
+            kitChoice = '0'
         else:
             kitChoice = kitChoiceBox.get()
         
@@ -161,8 +99,6 @@ def addItemGUI():
             newSupplierName = None
         else:
             newSupplierName = SupplierNameEntry.get().lower()
-        
-        #newName = NameEntry.get()
         
         newDescription = DescriptionEntry.get('1.0', tk.END).strip()
         
@@ -232,16 +168,24 @@ def addItemGUI():
         
         # ONLY COMMENTED OUT FOR TESTING, SHOULD BE READDED IN LATER IN CONJUNCTION WITH A 'KIT NUMBER' 
         # May just leave out and use the datacheck function instead
-# =============================================================================
-#         sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
-#         cur.execute(sql, [newManID])
-#         manIDRecords = cur.fetchall()
-#         if(manIDRecords):
-#             for manRecord in manIDRecords:
-#                 barcode = manRecord[6]
-#             tk.messagebox.showerror('Error', 'Manufacturer Number has already been found in our system')
-#             return
-# =============================================================================
+
+        sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
+        cur.execute(sql, [newManID])
+        manIDRecords = cur.fetchall()
+        if(manIDRecords):
+            for manRecord in manIDRecords:
+                barcode = manRecord[6]
+                kit = manRecord[8]
+                print(barcode, kit, kitChoice)
+                if(kit == kitChoice):  
+                    print('Matched Kit')
+                    tk.messagebox.showerror('Alert', 'Item has already been found in our system\nMoving to location of item')
+                    subWindow_x = str(newItemWindow.winfo_x() + 100)
+                    subWindow_y = str(newItemWindow.winfo_y() + 50)
+                    subWindowLoc = subWindow_x + "+" + subWindow_y
+                    newItemWindow.destroy()
+                    adjustItemGUI(barcode, subWindowLoc)
+                    return
 
 
         sql='''INSERT INTO ''' + DG.invDatabase + ''' (ManufacturerID, Manufacturer, SupplierPartNum, Supplier, Description, Quantity, Barcode, BOM_ID, kit)
@@ -255,10 +199,17 @@ def addItemGUI():
         cur.execute(sql, [newRoom, newRack, newShelf, newShelfLocation, newBarcode])
         
         sql = '''INSERT INTO ''' + DG.barDatabase + ''' (code) VALUES (%s); END'''
-        cur.execute(sql, [newBarcode])        
+        cur.execute(sql, [newBarcode])
+
+        if(kitChoice != '0'):
+            sql = '''INSERT INTO ''' + kitChoice + ''' (manufacturerid, manufacturer, supplierpartnum, supplier, description, quantity, barcode, username, timeadded, bom_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s); END'''
+            cur.execute(sql, [newManID, newManName, newSupplierPartNum, newSupplierName, newDescription, newQuantity, newBarcode, None, None, newBomID])
         
         print('Item should have been added')
         newItemWindow.destroy()
+        
+        return
 
     # variables for adding items
     manID = tk.StringVar()
@@ -388,7 +339,7 @@ def adjustItemGUI(barcode_for_adjustment, location):
     invRecords, locRecords = DG.searchID(barcode_for_adjustment)
     
     adjustItemWindow = tk.Tk()
-    adjustItemWindow.geometry("600x400+" + location)
+    adjustItemWindow.geometry("600x600+" + location)
     adjustItemWindow.title('Adjust Item')
     adjustItemWindow.focus_force()
     
@@ -421,8 +372,8 @@ def adjustItemGUI(barcode_for_adjustment, location):
             tk.messagebox.showerror("Error", "Barcodes must be 12 characters long")
             return
             
-        adjustedroom = room.get()
-        
+        adjustedroom = roomChoiceBox.get()
+        print(adjustedroom)
         # This will probably need to be adjusted to allow for doubled letters
         # Just parse the string and maybe add them together? Shouldn't cause an issue
         if(rackEntry.get() == ""):
@@ -523,6 +474,7 @@ def adjustItemGUI(barcode_for_adjustment, location):
     shelf = tk.StringVar()
     shelfLocation = tk.StringVar()
     
+    kitLabel = tk.Label(adjustItemWindow, text = "Kit/Build/RMA", font=('calibre', 12))
     manIDLabel = tk.Label(adjustItemWindow, text = 'Manufacturer Part #: ', font=('calibre', 12))
     manNameLabel = tk.Label(adjustItemWindow, text = 'Manufacturer: ', font=('calibre', 12))
     SupplierPartNumLabel = tk.Label(adjustItemWindow, text = 'Supplier Part Number: ', font=('calibre', 12))
@@ -535,6 +487,12 @@ def adjustItemGUI(barcode_for_adjustment, location):
     shelfLabel = tk.Label(adjustItemWindow, text = 'Shelf: ', font=('calibre', 12))
     shelfLocationLabel = tk.Label(adjustItemWindow, text = 'Shelf Location: ', font=('calibre', 12))
     
+    # TODO change this to allow changing kits from adjustItemGUI?
+    if(invRecords[0][8] == '0'):
+        kitName = 'No Kit/RMA/Build'
+    else:
+        kitName = invRecords[0][8]
+    kitNameLabel = tk.Label(adjustItemWindow, text = kitName, font=('calibre', 12))
     manIDEntry = tk.Entry(adjustItemWindow, textvariable = manID, font=('calibre', 12))
     manNameEntry = tk.Entry(adjustItemWindow, textvariable = manName, font=('calibre', 12))
     SupplierPartNumEntry = tk.Entry(adjustItemWindow, textvariable = supplierPartNum, font=('calibre', 12))
@@ -577,45 +535,48 @@ def adjustItemGUI(barcode_for_adjustment, location):
         shelfEntry.insert(0, locRecords[0][2])
     if(locRecords[0][3]):
         shelfLocationEntry.insert(0, locRecords[0][3])
-
-    manIDLabel.place(relx=.05, rely=.075, anchor='w')
-    manIDEntry.place(relx=.55, rely=.075, anchor='center')
+        
+    kitLabel.place(relx=.05, rely=.05, anchor='w')
+    kitNameLabel.place(relx=.55, rely=.05, anchor='center')
     
-    manNameLabel.place(relx=.05, rely=.15, anchor='w')
-    manNameEntry.place(relx=.55, rely=.15, anchor='center')
+    manIDLabel.place(relx=.05, rely=.12, anchor='w')
+    manIDEntry.place(relx=.55, rely=.12, anchor='center')
     
-    SupplierPartNumLabel.place(relx=.05, rely=.225, anchor='w')
-    SupplierPartNumEntry.place(relx=.55, rely=.225, anchor='center')
+    manNameLabel.place(relx=.05, rely=.19, anchor='w')
+    manNameEntry.place(relx=.55, rely=.19, anchor='center')
     
-    supplierNameLabel.place(relx=.05, rely=.3, anchor='w')
-    supplierNameEntry.place(relx=.55, rely=.3, anchor='center')
+    SupplierPartNumLabel.place(relx=.05, rely=.26, anchor='w')
+    SupplierPartNumEntry.place(relx=.55, rely=.26, anchor='center')
     
-    DescriptionLabel.place(relx=.05, rely=.375, anchor='w')
-    DescriptionEntry.place(relx=.55, rely=.4, anchor='center')
+    supplierNameLabel.place(relx=.05, rely=.33, anchor='w')
+    supplierNameEntry.place(relx=.55, rely=.33, anchor='center')
     
-    QuantityLabel.place(relx=.05, rely=.475, anchor='w')
-    QuantityEntry.place(relx=.55, rely=.475, anchor='center')
+    DescriptionLabel.place(relx=.05, rely=.4, anchor='w')
+    DescriptionEntry.place(relx=.55, rely=.425, anchor='center')
     
-    BarcodeLabel.place(relx=.05, rely=.55, anchor='w')
-    BarcodeEntry.place(relx=.55, rely=.55, anchor='center')
+    QuantityLabel.place(relx=.05, rely=.52, anchor='w')
+    QuantityEntry.place(relx=.55, rely=.52, anchor='center')
     
-    roomLabel.place(relx=.05, rely=.625, anchor='w')
-    roomChoiceBox.place(relx=.55, rely=.625, anchor='center')
+    BarcodeLabel.place(relx=.05, rely=.59, anchor='w')
+    BarcodeEntry.place(relx=.55, rely=.59, anchor='center')
     
-    rackLabel.place(relx=.05, rely=.7, anchor='w')
-    rackEntry.place(relx=.55, rely=.7, anchor='center')
+    roomLabel.place(relx=.05, rely=.66, anchor='w')
+    roomChoiceBox.place(relx=.55, rely=.66, anchor='center')
     
-    shelfLabel.place(relx=.05, rely=.775, anchor='w')
-    shelfEntry.place(relx=.55, rely=.775, anchor='center')
+    rackLabel.place(relx=.05, rely=.73, anchor='w')
+    rackEntry.place(relx=.55, rely=.73, anchor='center')
     
-    shelfLocationLabel.place(relx=.05, rely=.85, anchor='w')
-    shelfLocationEntry.place(relx=.55, rely=.85, anchor='center')
+    shelfLabel.place(relx=.05, rely=.8, anchor='w')
+    shelfEntry.place(relx=.55, rely=.8, anchor='center')
+    
+    shelfLocationLabel.place(relx=.05, rely=.87, anchor='w')
+    shelfLocationEntry.place(relx=.55, rely=.87, anchor='center')
     
     printButton = tk.Button(adjustItemWindow, text = "Print Label", command = printCode)
-    printButton.place(relx= .7, rely= .925, anchor = 'center')
+    printButton.place(relx= .7, rely= .94, anchor = 'center')
     
     adjustButton = tk.Button(adjustItemWindow, text = 'Adjust', command = adjustItem)
-    adjustButton.place(relx= .5, rely= .925, anchor='center')
+    adjustButton.place(relx= .5, rely= .94, anchor='center')
 
     adjustItemWindow.focus_force()
     adjustItemWindow.mainloop()
@@ -623,7 +584,7 @@ def adjustItemGUI(barcode_for_adjustment, location):
 
 def viewBuilds(location):
     viewBuildsWindow = tk.Tk()
-    viewBuildsWindow.title("Builds/RMAs")
+    viewBuildsWindow.title("Kits/Builds/RMAs")
     viewBuildsWindow.geometry("300x300+" + location)
     viewBuildsWindow.focus_force()
     #kitType = tk.StringVar()
@@ -650,7 +611,8 @@ def viewBuilds(location):
         buildListBox.delete(0, tk.END)
         buildsList = []
         sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' UNION
-                SELECT name FROM ''' + DG.rmaDatabase + ''';'''
+                SELECT name FROM ''' + DG.rmaDatabase + ''' UNION
+                SELECT name FROM ''' + DG.buildDatabase + ''';'''
         cur.execute(sql)
         buildNameRecords = cur.fetchall()
         if(buildNameRecords):
@@ -666,7 +628,8 @@ def viewBuilds(location):
         searchItem = '%' + searchBuild.get() + '%'
         buildListBox.delete(0, tk.END)
         sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE name ILIKE %s UNION
-                SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name ILIKE %s;'''
+                SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name ILIKE %s UNION
+                SELECT * FROM ''' + DG.buildDatabase + ''' WHERE name ILIKE %s;'''
         cur.execute(sql, [searchItem, searchItem])
         buildRecords = cur.fetchall()
         if(buildRecords):
@@ -686,6 +649,8 @@ def viewBuilds(location):
         
         if(tableName[:4] == 'rma_'):
             database = DG.rmaDatabase
+        elif(tableName[:6] == 'build_'):
+            database = DG.buildDatabase
         elif(tableName[:4] == 'kit_'):
             database = DG.kitDatabase
         else:
@@ -699,6 +664,7 @@ def viewBuilds(location):
             itemManID = record[0]
             itemBarcode = record[1]
             itemQuantity = record[2]
+            found = False
             
             sql = '''SELECT quantity, barcode, kit FROM ''' + DG.invDatabase + ''' WHERE manufacturerid = %s;'''
             cur.execute(sql, [itemManID])
@@ -710,6 +676,14 @@ def viewBuilds(location):
                     newInventoryQuantity = itemQuantity + invRecordQuantity
                     sql = '''UPDATE ''' + DG.invDatabase + ''' SET quantity = %s WHERE barcode = %s;'''
                     cur.execute(sql, [newInventoryQuantity, invRecordBarcode])
+                    found = True
+            
+            if(found == False):
+                # TODO 
+                # What should be done if an item is added directly to a kit but is not already in inventory and then the kit is deleted?
+                # Could do the whole locationList and addLocation page again
+                #
+                print("Figure it out")
             
             sql = '''DELETE FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
             cur.execute(sql, [itemBarcode])
@@ -751,12 +725,13 @@ def viewBuilds(location):
         noButton.place(relx=.35, rely=.7, anchor='center')
         
         return
-    # This needs to be added in, could make it essentially just the check out function
-    # Or given that check out uses kits, you could just call check out to this particular kit
+
     def editBuild():
         tableName = buildListBox.get(buildListBox.curselection())
         if(tableName[:4] == 'rma_'):
             database = DG.rmaDatabase
+        if(tableName[:6] == 'build_'):
+            database = DG.buildDatabase
         if(tableName[:4] == 'kit_'):
             database = DG.kitDatabase
         sql = '''SELECT barcode FROM ''' + database + ''' WHERE name = %s;'''
@@ -767,13 +742,8 @@ def viewBuilds(location):
             subWindow_x = str(viewBuildsWindow.winfo_x() + 100)
             subWindow_y = str(viewBuildsWindow.winfo_y() + 50)
             subWindowLoc = subWindow_x + "+" + subWindow_y
-            
-            
-            
             viewBuildsWindow.destroy()
             checkOut(barcode, subWindowLoc)
-            
-            
             
         return
     
@@ -801,6 +771,8 @@ def viewBuilds(location):
         def printHelper():
             if(tableName[:4] == "rma_"):
                 database = DG.rmaDatabase
+            elif(tableName[:6] == "build_"):
+                database = DG.buildDatabase
             elif(tableName[:4] == "kit_"):
                 database = DG.kitDatabase
             sql = '''SELECT barcode FROM ''' + database + ''' WHERE name = %s;'''
@@ -1033,6 +1005,8 @@ def createNewBuild(bar, location):
     def buildBoxChange(*args):
         if(buildChoiceBox.get() == 'RMA'):
             buildLabel.config(text="RMA Number: ")
+        elif(buildChoiceBox.get() == 'Build'):
+            buildLabel.config(text='Build Name: ')
         else:
             buildLabel.config(text="Name of Kit: ")
         return
@@ -1046,13 +1020,17 @@ def createNewBuild(bar, location):
         
         if(buildChoiceBox.get() == 'Kit'):
             tableVar = 'Kit_'
+        elif(buildChoiceBox.get() == 'Build'):
+            tableVar = 'Build_'
         else:
             tableVar = 'RMA_'
         tableName = tableVar + buildName
         
         # Check to make sure table doesn't already exist
-        sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE name = %s UNION SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name = %s;'''
-        cur.execute(sql, [tableName.lower(), tableName.lower()])
+        sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE name = %s 
+                UNION SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name = %s 
+                UNION SELECT * FROM ''' + DG.buildDatabase + ''' WHERE name = %s;'''
+        cur.execute(sql, [tableName.lower(), tableName.lower(), tableName.lower()])
         buildRecords = cur.fetchall()
         if(buildRecords):
             tk.messagebox.showerror("Error", "Build already exists in database", parent = newBuildWindow)
@@ -1062,6 +1040,9 @@ def createNewBuild(bar, location):
                 cur.execute(sql, [tableName.lower(), bar])
             elif(tableVar == 'RMA_'):
                 sql = '''INSERT INTO ''' + DG.rmaDatabase + ''' (name, barcode) VALUES (%s, %s);'''
+                cur.execute(sql, [tableName.lower(), bar])
+            elif(tableVar == 'Build_'):
+                sql = '''INSERT INTO ''' + DG.buildDatabase + ''' (name, barcode) VALUES (%s, %s);'''
                 cur.execute(sql, [tableName.lower(), bar])
                 
             sql = '''INSERT INTO ''' + DG.barDatabase + '''(code) VALUES (%s);'''
@@ -1094,7 +1075,7 @@ def createNewBuild(bar, location):
     
   
     buildType.trace_add('write', buildBoxChange)
-    choiceList = ['RMA', 'Kit']
+    choiceList = ['RMA', 'Kit', 'Build']
     buildChoiceBox = ttk.Combobox(
                         newBuildWindow,
                         state='readonly',
@@ -1109,6 +1090,7 @@ def createNewBuild(bar, location):
     #buildEntry.bind('<Return>', createBuildHelper)
     createButton = tk.Button(newBuildWindow, text = 'Create', command = createBuildHelper)
     barcodeLabel = tk.Label(newBuildWindow, text='')
+    buildEntry.bind('<Return>', lambda e: createBuildHelper())
     
     buildLabel.place(relx=.3, rely = .5, anchor = 'center')
     buildEntry.place(relx=.6, rely=.5, anchor = 'center')
@@ -1163,11 +1145,11 @@ def checkOut(buildBarcode, location):
         if(not records):
             tk.messagebox.showerror("Error", "Item not currently in system", parent = checkOutWindow)
             return
-        if(records[0][8] != '0'):
-            tk.messagebox.showerror("Error", "Adding items from one kit to another is not permitted", parent = checkOutWindow)
-            barEntry.delete(0,tk.END)
-            barEntry.focus_force()
-            return
+        # if(records[0][8] != '0'):
+        #     tk.messagebox.showerror("Error", "Adding items from one kit to another is not permitted", parent = checkOutWindow)
+        #     barEntry.delete(0,tk.END)
+        #     barEntry.focus_force()
+        #     return
         
         # Check previously added items for duplicates
         for line in checkOutTree.get_children():
@@ -1219,7 +1201,7 @@ def checkOut(buildBarcode, location):
                 checkOutTree.set(checkOutTree.focus(), column = '4', value = quantityEntry.get())
             else:
                 errorMessage = 'Less than ' + quantityEntry.get() + ' "' + selected['values'][1] + '" available in database'
-                tk.messagebox.showerror("Error", errorMessage)
+                tk.messagebox.showerror("Error", errorMessage, parent = checkOutWindow)
             return
         
         returnButton = tk.Button(editItemWindow, text = 'Return', command = editItemWindow.destroy)
@@ -1261,8 +1243,9 @@ def checkOut(buildBarcode, location):
 
         def finalizeCheckout(buildBar):
             sql = '''SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE barcode = %s UNION
-                    SELECT * FROM ''' + DG.kitDatabase + ''' WHERE barcode = %s;'''
-            cur.execute(sql, [buildBar, buildBar])
+                    SELECT * FROM ''' + DG.kitDatabase + ''' WHERE barcode = %s UNION 
+                    SELECT * FROM ''' + DG.buildDatabase + ''' WHERE barcode = %s;'''
+            cur.execute(sql, [buildBar, buildBar, buildBar])
             buildRecords = cur.fetchall()
             if(buildRecords):
                 buildName = buildRecords[0][0]
@@ -1310,6 +1293,7 @@ def checkOut(buildBarcode, location):
                                 # kitQuantityRecords is the full records of quantity in the kit (should only contain one item)
                                 # checkOutQuantity is the quantity in the checkOutTree associated with the manID
                                 newBuildQuantity = kitQuantityRecords[0][0] + checkOutQuantity
+                                print('New: ' + str(newBuildQuantity), 'Old: ' + str(kitQuantityRecords[0][0]), 'CheckOut: ' + str(checkOutQuantity))
                                 sql = '''UPDATE ''' + buildName + ''' SET quantity = %s WHERE manufacturerid = %s;'''
                                 cur.execute(sql, [newBuildQuantity, manID])
                                 
@@ -1346,6 +1330,19 @@ def checkOut(buildBarcode, location):
                                 quantity = itemRecords[0][5] - checkOutQuantity                                
                                 sql = '''UPDATE ''' + DG.invDatabase + ''' SET quantity = %s WHERE barcode = %s;'''
                                 cur.execute(sql, [quantity, str(itemCode)])
+                                
+                                sql = '''SELECT kit FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
+                                cur.execute(sql, [itemCode])
+                                kitRecords = cur.fetchall()
+                                #quantity = kitRecords[0][0]
+                                kit = kitRecords[0][0]
+                                print(kit, quantity, itemCode)
+                                if(kit != '0'):
+                                    sql = '''UPDATE ''' + kit + ''' SET quantity = %s WHERE barcode = %s;'''
+                                    cur.execute(sql, [quantity, str(itemCode)])
+                                
+                    if(quantityUpdateCheck):
+                        tk.messagebox.showinfo("Success", "Quantites of items previously in kit updated", parent = checkOutWindow) 
                             
                     if (len(newLocationsList) > 0):         
                         def editLocation(*args):
@@ -1354,6 +1351,7 @@ def checkOut(buildBarcode, location):
                             loc = newLocationsTree.selection()[0]
                             selectedItemList = newLocationsTree.item(loc)['values']
                             barcode = str(selectedItemList[1])
+                            manID = str(selectedItemList[0])
                             # Uncomment once added back into Database_GUI
                             subWindow_x = str(newLocationsWindow.winfo_x() + 100)
                             subWindow_y = str(newLocationsWindow.winfo_y() + 50)
@@ -1392,6 +1390,8 @@ def checkOut(buildBarcode, location):
                             adjustLocationWindow.geometry("300x300+" + subWindowLoc)
                             adjustLocationWindow.title("Adjust Location")
                             
+                            itemName = manID + "\n" + buildName
+                            itemNameLabel = tk.Label(adjustLocationWindow, text = itemName, font = ('calibre', 12))
                             roomLabel = tk.Label(adjustLocationWindow, text = 'Room:')
                             rackLabel  = tk.Label(adjustLocationWindow, text = 'Rack:')
                             shelfLabel = tk.Label(adjustLocationWindow, text = 'Rack:')
@@ -1408,15 +1408,17 @@ def checkOut(buildBarcode, location):
                             rackEntry = tk.Entry(adjustLocationWindow)
                             shelfEntry = tk.Entry(adjustLocationWindow)
                             enterLocationButton = tk.Button(adjustLocationWindow, text='Submit', command=submitLocation)
+                            shelfEntry.bind('<Return>', lambda e: submitLocation())
                             
-                            roomLabel.place(relx=.25, rely=.2, anchor='center')
-                            rackLabel.place(relx=.25, rely=.4, anchor='center')
-                            shelfLabel.place(relx=.25, rely=.6, anchor='center')
-                            enterLocationButton.place(relx=.5, rely=.8, anchor='center')
+                            itemNameLabel.place(relx=.5, rely=.15, anchor='center')
+                            roomLabel.place(relx=.25, rely=.3, anchor='center')
+                            rackLabel.place(relx=.25, rely=.5, anchor='center')
+                            shelfLabel.place(relx=.25, rely=.7, anchor='center')
+                            enterLocationButton.place(relx=.5, rely=.85, anchor='center')
                             
-                            roomComboBox.place(relx=.6, rely=.2, anchor='center')
-                            rackEntry.place(relx=.6, rely=.4, anchor='center')
-                            shelfEntry.place(relx=.6, rely=.6, anchor='center')
+                            roomComboBox.place(relx=.6, rely=.3, anchor='center')
+                            rackEntry.place(relx=.6, rely=.5, anchor='center')
+                            shelfEntry.place(relx=.6, rely=.7, anchor='center')
                             
                             adjustLocationWindow.focus_force()
     
@@ -1431,15 +1433,17 @@ def checkOut(buildBarcode, location):
                                 print(emptyLocationsList)
                                 tk.messagebox.showerror("ERROR", "Please add a location to all items", parent = newLocationsWindow)
                             else:
-                                tk.messagebox.showinfo("Success", "Items added into inventory in their new locations")
+                                tk.messagebox.showinfo("Success", "Items added into inventory in their new locations", parent = newLocationsWindow)
                                 newLocationsWindow.destroy()
                                 checkOutWindow.destroy()
                             return
 
-                        
+                        subWindow_x = str(checkOutWindow.winfo_x() + 100)
+                        subWindow_y = str(checkOutWindow.winfo_y() + 50)
+                        subWindowLoc = subWindow_x + "+" + subWindow_y
                         newLocationsWindow = tk.Tk()
                         newLocationsWindow.title("New Locations")
-                        newLocationsWindow.geometry("500x350")
+                        newLocationsWindow.geometry("500x350+" + subWindowLoc)
                         
                         newLocationsTree = ttk.Treeview(newLocationsWindow, selectmode='browse', height = 10)
                         newLocationsScrollbar = tk.Scrollbar(newLocationsWindow, orient='vertical', command = newLocationsTree.yview)
@@ -1468,12 +1472,12 @@ def checkOut(buildBarcode, location):
                         newLocationsScrollbar.place(relx=.84, rely=.4, anchor='center')
                         editItemButton.place(relx=.5, rely=.8, anchor='center')
                         completeButton.place(relx=.5, rely=.9, anchor='center')
+                        newLocationsWindow.focus_force()
                         
                         newLocationsWindow.mainloop()      
                         
-                    if(quantityUpdateCheck):
-                        tk.messagebox.showinfo("Success", "Quantites of items previously in kit updated")        
-                if(buildName[:4] == "rma_"):
+                           
+                if(buildName[:4] == "rma_" or buildName[:6] == "build_"):
                     print(buildName)
                     for line in checkOutTree.get_children(): 
                         if(line):
@@ -1501,7 +1505,10 @@ def checkOut(buildBarcode, location):
                 buildBarEntry.focus_force()
                 buildBarEntry.delete(0, tk.END)
 
-            checkOutWindow.destroy()
+            try:
+                checkOutWindow.destroy()
+            except:
+                print("Tried to destroy check out window but it was already removed\n")
             #checkOut(None, location)
             return
         
@@ -1524,8 +1531,7 @@ def checkOut(buildBarcode, location):
             bar = DG.createBarcode()
             #checkOutWindow.destroy()
             createNewBuild(bar, subWindowLoc)
-            print("FUCKME")
-            finalizeCheckout(bar)
+            #finalizeCheckout(bar)
             return
         
         buildBarLabel = tk.Label(receiptScreen, text = "Build Barcode:", font = ('calibre', 12))
@@ -1670,7 +1676,7 @@ def Admin(location):
         buildScrollbar = tk.Scrollbar(adminBuildMenuWindow)
         returnButton = tk.Button(adminBuildMenuWindow, text = "Return", command = lambda:[adminBuildMenuWindow.destroy(), adminMenu()])
 
-        sql = '''SELECT name FROM ''' + DG.rmaDatabase + ''' UNION SELECT name FROM ''' + DG.kitDatabase + ''';'''
+        sql = '''SELECT name FROM ''' + DG.rmaDatabase + ''' UNION SELECT name FROM ''' + DG.kitDatabase + ''' UNION SELECT name FROM ''' + DG.buildDatabase + ''';'''
         cur.execute(sql)
         buildNameRecords = cur.fetchall()
         
@@ -2022,7 +2028,7 @@ def Admin(location):
                 cur.execute(sql, [bar_to_remove])
                 sql = '''DELETE FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
                 cur.execute(sql, [bar_to_remove])
-                sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' UNION SELECT name FROM ''' + DG.rmaDatabase + ''';'''
+                sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' UNION SELECT name FROM ''' + DG.rmaDatabase + ''' UNION SELECT name FROM ''' + DG.buildDatabase + ''';'''
                 cur.execute(sql)
                 buildNames = cur.fetchall()
                 if(buildNames):
@@ -2243,6 +2249,7 @@ def mainMenu():
                                 if(selectedKit == 'None'):
                                     selectedKit = '0'
                                 if(item[8] == selectedKit):
+                                    kitCheckWindow.destroy()
                                     adjustItemGUI(item[6], subWindowLoc)
                             return
                         kitChoice = tk.StringVar()
