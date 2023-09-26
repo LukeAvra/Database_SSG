@@ -134,17 +134,6 @@ def addItemGUI():
         else:
             newShelfLocation = shelfLocationEntry.get()
             
-        # Uncomment this when ready to use the Brother printer for all labels
-        labelText = newManID.lower()
-        if(roomChoiceBox.get() != ''):
-            labelText = labelText + ' ' + roomChoiceBox.get()
-        if(rackEntry.get() != ''):
-                labelText = labelText + ' ' + rackEntry.get().upper()
-        if(shelfEntry.get() != ''):
-                labelText = labelText + '-' + shelfEntry.get()
-        PL.createBarcodeImage(labelText, newBarcode)
-        PL.printBarcode()
-            
         # Check if Barcode is already in system, do extraneous checks, adding items doesn't have to be blazing fast
         sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
         cur.execute(sql, [newBarcode])
@@ -187,6 +176,18 @@ def addItemGUI():
                     adjustItemGUI(barcode, subWindowLoc)
                     return
 
+        # Uncomment this when ready to use the Brother printer for all labels
+        labelText = newManID.lower()
+        if(roomChoiceBox.get() != ''):
+            labelText = labelText + ' ' + roomChoiceBox.get()
+        if(rackEntry.get() != ''):
+                labelText = labelText + ' ' + rackEntry.get().upper()
+        if(shelfEntry.get() != ''):
+                labelText = labelText + '-' + shelfEntry.get()
+        PL.createBarcodeImage(labelText, newBarcode)
+        PL.printBarcode()
+        
+        
 
         sql='''INSERT INTO ''' + DG.invDatabase + ''' (ManufacturerID, Manufacturer, SupplierPartNum, Supplier, Description, Quantity, Barcode, BOM_ID, kit)
                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
