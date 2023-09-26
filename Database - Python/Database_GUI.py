@@ -656,41 +656,41 @@ def viewBuilds(location):
         else:
             tk.messagebox.showerror("Error", "Issue processing information involved with specified build")
             return
-        
-        sql = '''SELECT manufacturerid, barcode, quantity FROM ''' + tableName + ''';'''
-        cur.execute(sql)
-        fullBuildRecords = cur.fetchall()
-        for record in fullBuildRecords:
-            itemManID = record[0]
-            itemBarcode = record[1]
-            itemQuantity = record[2]
-            found = False
-            
-            sql = '''SELECT quantity, barcode, kit FROM ''' + DG.invDatabase + ''' WHERE manufacturerid = %s;'''
-            cur.execute(sql, [itemManID])
-            manIDRecords = cur.fetchall()
-            for manIDRecord in manIDRecords:
-                if(manIDRecord[2] == '0'):
-                    invRecordQuantity = manIDRecord[0]
-                    invRecordBarcode = manIDRecord[1]
-                    newInventoryQuantity = itemQuantity + invRecordQuantity
-                    sql = '''UPDATE ''' + DG.invDatabase + ''' SET quantity = %s WHERE barcode = %s;'''
-                    cur.execute(sql, [newInventoryQuantity, invRecordBarcode])
-                    found = True
-            
-            if(found == False):
-                # TODO 
-                # What should be done if an item is added directly to a kit but is not already in inventory and then the kit is deleted?
-                # Could do the whole locationList and addLocation page again
-                #
-                print("Figure it out")
-            
-            sql = '''DELETE FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
-            cur.execute(sql, [itemBarcode])
-            sql = '''DELETE FROM ''' + DG.locDatabase + ''' WHERE barcode = %s;'''
-            cur.execute(sql, [itemBarcode])
-            sql = '''DELETE FROM ''' + DG.barDatabase + ''' WHERE code = %s;'''
-            cur.execute(sql, [itemBarcode])
+        if(tableName[:4] == 'kit_'):
+            sql = '''SELECT manufacturerid, barcode, quantity FROM ''' + tableName + ''';'''
+            cur.execute(sql)
+            fullBuildRecords = cur.fetchall()
+            for record in fullBuildRecords:
+                itemManID = record[0]
+                itemBarcode = record[1]
+                itemQuantity = record[2]
+                found = False
+                
+                sql = '''SELECT quantity, barcode, kit FROM ''' + DG.invDatabase + ''' WHERE manufacturerid = %s;'''
+                cur.execute(sql, [itemManID])
+                manIDRecords = cur.fetchall()
+                for manIDRecord in manIDRecords:
+                    if(manIDRecord[2] == '0'):
+                        invRecordQuantity = manIDRecord[0]
+                        invRecordBarcode = manIDRecord[1]
+                        newInventoryQuantity = itemQuantity + invRecordQuantity
+                        sql = '''UPDATE ''' + DG.invDatabase + ''' SET quantity = %s WHERE barcode = %s;'''
+                        cur.execute(sql, [newInventoryQuantity, invRecordBarcode])
+                        found = True
+                
+                if(found == False):
+                    # TODO 
+                    # What should be done if an item is added directly to a kit but is not already in inventory and then the kit is deleted?
+                    # Could do the whole locationList and addLocation page again
+                    #
+                    print("Figure it out")
+                
+                sql = '''DELETE FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
+                cur.execute(sql, [itemBarcode])
+                sql = '''DELETE FROM ''' + DG.locDatabase + ''' WHERE barcode = %s;'''
+                cur.execute(sql, [itemBarcode])
+                sql = '''DELETE FROM ''' + DG.barDatabase + ''' WHERE code = %s;'''
+                cur.execute(sql, [itemBarcode])
         
         sql = '''SELECT barcode FROM ''' + database + ''' WHERE name = %s;'''
         cur.execute(sql, [tableName])
@@ -714,8 +714,16 @@ def viewBuilds(location):
         deleteBuildCheckWindow = tk.Tk()
         deleteBuildCheckWindow.geometry("350x200+" + subWindowLoc)
         deleteBuildCheckWindow.title("Delete Build Check")
-        
-        deleteCheckString = 'All items in build will be returned to main inventory locations\nContinue?'
+        deleteBuildCheckWindow.focus_force()
+        try:
+            tableName = buildListBox.get(buildListBox.curselection())
+        except:
+            tk.messagebox.showerror("Error", "Must select item to delete", parent = deleteBuildCheckWindow)
+            return
+        if(tableName[:4] == 'kit_'):
+            deleteCheckString = 'All items in build will be returned to main inventory locations\nContinue?'
+        else:
+            deleteCheckString = 'Are you sure you want to delete this RMA/Build?\nAll items within will be removed'
         deleteCheckLabel = tk.Label(deleteBuildCheckWindow, text = deleteCheckString)
         yesButton = tk.Button(deleteBuildCheckWindow, text = 'Yes', command=lambda:[deleteBuildCheckWindow.destroy(), deleteBuild()])
         noButton = tk.Button(deleteBuildCheckWindow, text='No', command=lambda:[deleteBuildCheckWindow.destroy()])
@@ -1153,10 +1161,15 @@ def checkOut(buildBarcode, location):
         
         # Check previously added items for duplicates
         for line in checkOutTree.get_children():
-            #print("Tree:", checkOutTree.item(line).get('values')[2], type(checkOutTree.item(line).get('values')[2]), "Barcode:", barEntry.get(), type(barEntry.get()))
-            if(str(checkOutTree.item(line).get('values')[2]) == barEntry.get()):
+            barcode = str(checkOutTree.item(line).get('values')[2])
+            if(len(barcode) < 12):
+                zeroCount = 12 - len(barcode)
+                for i in range(zeroCount):
+                    barcode = "0" + barcode
+            if(barcode == barEntry.get()):
                 errorMessage = 'Item: "' + str(checkOutTree.item(line).get('values')[1]) + '" already in list'
                 tk.messagebox.showerror("Error", errorMessage, parent = checkOutWindow)
+                itemQuantityEntry.delete(0, tk.END)
                 barEntry.delete(0,tk.END)
                 barEntry.focus_force()
                 return
@@ -1170,9 +1183,10 @@ def checkOut(buildBarcode, location):
         # Check to make sure that quantity is available in database
         if(not quantityCheck(barEntry.get(), quantity)):
             errorMessage = 'Less than ' + str(quantity) + ' "' + records[0][4] + '" available in database'
-            tk.messagebox.showerror("Error", errorMessage)
+            tk.messagebox.showerror("Error", errorMessage, parent = checkOutWindow)
+            barEntry.delete(0, tk.END)
             itemQuantityEntry.delete(0, tk.END)
-            itemQuantityEntry.focus_force()
+            barEntry.focus_force()
             return
             
         # Insertion of values into Treeview tree
@@ -1264,6 +1278,10 @@ def checkOut(buildBarcode, location):
                         if(line):
                             manID = checkOutTree.item(line).get('values')[0]
                             itemCode = str(checkOutTree.item(line).get('values')[2])
+                            if(len(itemCode) < 12):
+                                zeroCount = 12 - len(itemCode)
+                                for i in range(zeroCount):
+                                    itemCode = "0" + itemCode
                             checkOutQuantity = checkOutTree.item(line).get('values')[3]
                             
                             sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
@@ -1482,7 +1500,13 @@ def checkOut(buildBarcode, location):
                     for line in checkOutTree.get_children(): 
                         if(line):
                             manID = checkOutTree.item(line).get('values')[0]
-                            itemCode = checkOutTree.item(line).get('values')[2]
+                            
+                            # Pulling barcode here will cause issues with leading zeros
+                            itemCode = str(checkOutTree.item(line).get('values')[2])
+                            if(len(itemCode) < 12):
+                                zeroCount = 12 - len(itemCode)
+                                for i in range(zeroCount):
+                                    itemCode = "0" + itemCode
                             checkOutQuantity = checkOutTree.item(line).get('values')[3]
                             sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
                             cur.execute(sql, [str(itemCode)])
@@ -1491,7 +1515,9 @@ def checkOut(buildBarcode, location):
                                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
                             cur.execute(sql, [itemRecords[0][0], itemRecords[0][1], itemRecords[0][2], itemRecords[0][3], itemRecords[0][4], checkOutQuantity, itemRecords[0][6], username, currentTime, itemRecords[0][7]])
                 
-                
+                            newInvQuantity = itemRecords[0][5] - checkOutQuantity
+                            sql = '''UPDATE ''' + DG.invDatabase + ''' SET quantity = %s WHERE barcode = %s;'''
+                            cur.execute(sql, [newInvQuantity, str(itemCode)])
                 
                 # Original item quantities are established down here, may want to move location
                 
@@ -2280,6 +2306,7 @@ def mainMenu():
                         kitCheckWindow.mainloop()
                     else:
                         selectedBarcode = searchRecords[0][6]
+                        print(selectedBarcode)
                         adjustItemGUI(selectedBarcode, subWindowLoc)
                 if(sType == 'description'):
                     sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE description = %s;'''
