@@ -1292,7 +1292,6 @@ def checkOut(buildBarcode, location):
                                 # manID == itemRecords[0][0]
                             
                             ## kitList is a list of the manufacturerid's present in the build
-                            
                             kitList = []
                             sql = '''SELECT * FROM ''' + buildName + ''';'''
                             cur.execute(sql)
@@ -1311,7 +1310,7 @@ def checkOut(buildBarcode, location):
                                 # kitQuantityRecords is the full records of quantity in the kit (should only contain one item)
                                 # checkOutQuantity is the quantity in the checkOutTree associated with the manID
                                 newBuildQuantity = kitQuantityRecords[0][0] + checkOutQuantity
-                                print('New: ' + str(newBuildQuantity), 'Old: ' + str(kitQuantityRecords[0][0]), 'CheckOut: ' + str(checkOutQuantity))
+                                #print('New: ' + str(newBuildQuantity), 'Old: ' + str(kitQuantityRecords[0][0]), 'CheckOut: ' + str(checkOutQuantity))
                                 sql = '''UPDATE ''' + buildName + ''' SET quantity = %s WHERE manufacturerid = %s;'''
                                 cur.execute(sql, [newBuildQuantity, manID])
                                 
@@ -1354,7 +1353,7 @@ def checkOut(buildBarcode, location):
                                 kitRecords = cur.fetchall()
                                 #quantity = kitRecords[0][0]
                                 kit = kitRecords[0][0]
-                                print(kit, quantity, itemCode)
+                                #print(kit, quantity, itemCode)
                                 if(kit != '0'):
                                     sql = '''UPDATE ''' + kit + ''' SET quantity = %s WHERE barcode = %s;'''
                                     cur.execute(sql, [quantity, str(itemCode)])
@@ -1395,7 +1394,6 @@ def checkOut(buildBarcode, location):
                                 
                                 labelText = selectedItemList[0].lower()
                                 labelText = labelText + " " + currentLocation
-                                print(labelText)
                                 # locationRecords[0][4] is the barcode
                                 PL.createBarcodeImage(labelText, locationRecords[0][4])
                                 PL.printBarcode()
@@ -1448,7 +1446,7 @@ def checkOut(buildBarcode, location):
                                 if((str(newLocationsTree.item(line).get('values')[3])) == 'None'):
                                     emptyLocationsList.append(newLocationsTree.item(line).get('values'))
                             if(emptyLocationsList):
-                                print(emptyLocationsList)
+                                #print(emptyLocationsList)
                                 tk.messagebox.showerror("ERROR", "Please add a location to all items", parent = newLocationsWindow)
                             else:
                                 tk.messagebox.showinfo("Success", "Items added into inventory in their new locations", parent = newLocationsWindow)
@@ -1496,7 +1494,7 @@ def checkOut(buildBarcode, location):
                         
                            
                 if(buildName[:4] == "rma_" or buildName[:6] == "build_"):
-                    print(buildName)
+                    #print(buildName)
                     for line in checkOutTree.get_children(): 
                         if(line):
                             manID = checkOutTree.item(line).get('values')[0]
@@ -1518,6 +1516,26 @@ def checkOut(buildBarcode, location):
                             newInvQuantity = itemRecords[0][5] - checkOutQuantity
                             sql = '''UPDATE ''' + DG.invDatabase + ''' SET quantity = %s WHERE barcode = %s;'''
                             cur.execute(sql, [newInvQuantity, str(itemCode)])
+                            
+                            if(itemRecords[0][8] != '0'):
+                                currentBuildName = itemRecords[0][8]
+                                
+                                # sql = '''SELECT quantity from ''' + buildName + ''' WHERE barcode = %s;'''
+                                # cur.execute(sql, [str(itemCode)])
+                                # buildQuantityRecords = cur.fetchall()
+                                # buildQuantity_prior = buildQuantityRecords[0][0]
+                                # newBuildQuantity = buildQuantity_prior - checkOutQuantity
+                                
+                                # sql = '''UPDATE ''' + currentBuildName + ''' SET quantity = %s WHERE barcode = %s;'''
+                                # cur.execute(sql, [newBuildQuantity, str(itemCode)])
+                                sql = '''SELECT quantity from ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
+                                cur.execute(sql, [str(itemCode)])
+                                currentItemUpdatedInvQuantityRecords = cur.fetchall()
+                                sql = '''UPDATE ''' + currentBuildName + ''' SET quantity = %s WHERE barcode = %s;'''
+                                cur.execute(sql, [currentItemUpdatedInvQuantityRecords[0][0] , str(itemCode)])
+                                
+                                
+                                
                 
                 # Original item quantities are established down here, may want to move location
                 
@@ -1673,6 +1691,7 @@ def Admin(location):
                 buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
                 return
             
+            #TODO copy code from DELETE BUILD in main user menu
             def deleteBuild():
                 print('Delete Build ' + buildName)
                 return
@@ -2102,9 +2121,6 @@ def Admin(location):
                     removeCheckWindow.title("Are you sure?")
                     removeCheckWindow.focus_force()
                     
-                    
-                    # TODO all treeviews need to have this loop added for pulling barcodes
-                    # Otherwise it will convert to an int and delete leading zeros and those need to be added back in
                     bar_to_remove = str(removeTree.item(removeTree.focus())['values'][2])
                     if(len(bar_to_remove) < 12):
                         zeroCount = 12 - len(bar_to_remove)
@@ -2216,6 +2232,8 @@ def generateBarcode(barcodeEntry, checkDigitLabel):
         checkDigitLabel.configure(text=str(checkDigit))
     return sqlCheck
 
+#TODO it might be a good idea to remove the searchType.get() checks and just use searchChoiceBox.get(). 
+# I've had far fewer errors using that with other comboboxes
 def mainMenu():
     cur = DG.conn.cursor()
     global mainMenuWindow
@@ -2316,7 +2334,7 @@ def mainMenu():
                         kitCheckWindow.mainloop()
                     else:
                         selectedBarcode = searchRecords[0][6]
-                        print(selectedBarcode)
+                        #print(selectedBarcode)
                         adjustItemGUI(selectedBarcode, subWindowLoc)
                 if(sType == 'description'):
                     sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE description = %s;'''
@@ -2443,3 +2461,13 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+    
+# Treeview barcode adjustment code
+# Needed EVERY TIME a barcode is pulled from a treeview
+# 
+# barcode = str(barcode)  
+# if(len(barcode) < 12):
+#     zeroCount = 12 - len(barcode)
+#     for i in range(zeroCount):
+#         barcode = "0" + barcode
