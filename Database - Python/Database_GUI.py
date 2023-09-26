@@ -1593,6 +1593,16 @@ def checkOut(buildBarcode, location):
         completeOrderGUI(subWindowLoc)
         return
     
+    def returnHelper():
+        try:
+            if(mainMenuWindow.winfo_exists()):
+                checkOutWindow.destroy()
+                mainMenuWindow.focus_force()
+        except:
+            checkOutWindow.destroy()
+            mainMenu()
+        return
+    
     
     #barEntryCombobox =
     barEntryLabel = tk.Label(checkOutWindow, text = 'Barcode:', font = ('calibre', 12))
@@ -1605,7 +1615,7 @@ def checkOut(buildBarcode, location):
     editItemButton = tk.Button(checkOutWindow, text = "Edit Item", command = editItem)
     removeItemButton = tk.Button(checkOutWindow, text = 'Delete Item', command = removeItem)
     completeOrderButton = tk.Button(checkOutWindow, text = 'Complete Order', command = completeOrderHelper)
-    homeButton = tk.Button(checkOutWindow, text = "Home", command = lambda:[checkOutWindow.destroy(), mainMenu()])
+    homeButton = tk.Button(checkOutWindow, text = "Home", command = returnHelper)
     barEntry.focus_force()
     barEntry.bind('<Return>', lambda e: itemQuantityEntry.focus_force())
     itemQuantityEntry.bind('<Return>', lambda e: addItem())
