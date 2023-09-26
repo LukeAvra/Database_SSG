@@ -583,6 +583,7 @@ def adjustItemGUI(barcode_for_adjustment, location):
     return
 
 def viewBuilds(location):
+    tableName = None
     viewBuildsWindow = tk.Tk()
     viewBuildsWindow.title("Kits/Builds/RMAs")
     viewBuildsWindow.geometry("300x300+" + location)
@@ -630,7 +631,7 @@ def viewBuilds(location):
         sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE name ILIKE %s UNION
                 SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name ILIKE %s UNION
                 SELECT * FROM ''' + DG.buildDatabase + ''' WHERE name ILIKE %s;'''
-        cur.execute(sql, [searchItem, searchItem])
+        cur.execute(sql, [searchItem, searchItem, searchItem])
         buildRecords = cur.fetchall()
         if(buildRecords):
             for build in buildRecords:
@@ -735,15 +736,19 @@ def viewBuilds(location):
         return
 
     def editBuild():
-        tableName = buildListBox.get(buildListBox.curselection())
-        if(tableName[:4] == 'rma_'):
+        try:
+            tableNameEditBuild = buildListBox.get(buildListBox.curselection())
+        except:
+            print(buildNameLabel.cget("text"))
+            tableNameEditBuild = buildNameLabel.cget("text")
+        if(tableNameEditBuild[:4] == 'rma_'):
             database = DG.rmaDatabase
-        if(tableName[:6] == 'build_'):
+        if(tableNameEditBuild[:6] == 'build_'):
             database = DG.buildDatabase
-        if(tableName[:4] == 'kit_'):
+        if(tableNameEditBuild[:4] == 'kit_'):
             database = DG.kitDatabase
         sql = '''SELECT barcode FROM ''' + database + ''' WHERE name = %s;'''
-        cur.execute(sql, [tableName])
+        cur.execute(sql, [tableNameEditBuild])
         records = cur.fetchall()
         if records:
             barcode = records[0][0]
@@ -777,6 +782,7 @@ def viewBuilds(location):
             buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
             return
         def printHelper():
+            tableName = buildNameLabel.cget("text")
             if(tableName[:4] == "rma_"):
                 database = DG.rmaDatabase
             elif(tableName[:6] == "build_"):
@@ -1463,7 +1469,7 @@ def checkOut(buildBarcode, location):
                         
                         newLocationsTree = ttk.Treeview(newLocationsWindow, selectmode='browse', height = 10)
                         newLocationsScrollbar = tk.Scrollbar(newLocationsWindow, orient='vertical', command = newLocationsTree.yview)
-                        completeButton = tk.Button(newLocationsWindow, text='Submit', command=submissionCheck)
+                        completeButton = tk.Button(newLocationsWindow, text='Finish', command=submissionCheck)
                         editItemButton = tk.Button(newLocationsWindow, text='Edit Item', command=editLocation)
                         
                         newLocationsTree.configure(yscrollcommand = newLocationsScrollbar.set)
@@ -2430,7 +2436,7 @@ def mainMenu():
     searchInventoryEntry.bind('<Return>', lambda e: barcodeSearchHelper())     
     searchButton = ttk.Button(mainMenuWindow, text = "Search", command = lambda: [barcodeSearch()])
     addItemButton = ttk.Button(mainMenuWindow, text = "Add Item", command = lambda: [addItemGUI()])
-    buildsButton = ttk.Button(mainMenuWindow, text="Kits/RMAs", command = buildsHelper)
+    buildsButton = ttk.Button(mainMenuWindow, text="Kits/Builds/RMAs", command = buildsHelper)
     checkOutButton = ttk.Button(mainMenuWindow, text = 'Check Out', command = checkOutHelper)
     adminButton = ttk.Button(mainMenuWindow, text = 'Admin', command = adminMenuHelper)
 
