@@ -423,7 +423,6 @@ def adjustItemGUI(barcode_for_adjustment, location):
                 cur.execute(sql)
                 buildListRecords = cur.fetchall()
                 for buildName in buildListRecords:
-                    print(buildName)
                     sql = '''UPDATE ''' + buildName[0] + ''' 
                             SET ManufacturerID = %s,
                                 Manufacturer = %s,
