@@ -22,17 +22,20 @@ import bcrypt
 
 
 def mainMenu():
-    codeList = []
-    for i in range(1000):
-        code = DG.createBarcode()
-        codeList.append(code)
-    codeList.sort()
-    print(codeList)
+
     return
 
 def main():
     DG.main()
-    mainMenu()
+    
+    def fuck(x):
+        x += 5
+        return
+    
+    x = 5
+    fuck(x)
+    print(x)
+    
     DG.close()
     
     

@@ -39,11 +39,12 @@ def accessBackup():
     return
 
 def insertion(sqlFile, database):
+    cur = DG.conn.cursor()
     if(database == 'barcodes'):
         order = 'code'
     else:
         order = 'barcode'
-    cur = DG.conn.cursor()
+    
     sql = '''SELECT * FROM ''' + database + ''' ORDER BY ''' + order + ''';'''
     cur.execute(sql)
     records = cur.fetchall()
@@ -56,6 +57,7 @@ def insertion(sqlFile, database):
 
 def createFile(basePath):
     DG.main() 
+    cur = DG.conn.cursor()
     month = datetime.now().strftime("%B")
     year= datetime.now().strftime("%Y")
     dt_str = datetime.now().strftime("%B %d_%H-%M-%S")
@@ -70,6 +72,17 @@ def createFile(basePath):
     sqlFile = open(filePath, 'w')
     for db in dbList:
         insertion(sqlFile, db)
+    
+
+    buildsKitsAndRMAs = [DG.buildDatabase, DG.kitDatabase, DG.rmaDatabase]
+    for db in buildsKitsAndRMAs:
+        sql = '''SELECT name FROM ''' + db + ''';'''
+        cur.execute(sql)
+        names = cur.fetchall()
+        for tableName in names:
+            print(tableName[0])
+            insertion(sqlFile, tableName[0])
+        
     return
 
 def share():
