@@ -165,7 +165,7 @@ def arguments():
         return args
     else:
         return
-    
+
 
 def main():
     # Text that appears above barcode on label
@@ -185,13 +185,14 @@ def main():
 
     if(arguments()):
         args = arguments()
-        for i in args:
-            if(i.strip(',').isalpha()):
-                base = "C:\\Users\\Luke\\Desktop\\Letters"
-            else:
-                base = "C:\\Users\\Luke\\Desktop\\Numbers"
-            toPrint = base + "\\" + i.strip(',') + ".png"
-            printOther(toPrint)
+        for i in range(12):
+            for i in args:
+                if(i.strip(',').isalpha()):
+                    base = "C:\\Users\\Luke\\Desktop\\Letters"
+                else:
+                    base = "C:\\Users\\Luke\\Desktop\\Numbers"
+                toPrint = base + "\\" + i.strip(',') + ".png"
+                printOther(toPrint)
 # =============================================================================
 #             num = len(str(i.strip(',')))
 #             if(num > 3):

@@ -613,7 +613,7 @@ def adjustItemGUI(barcode_for_adjustment, location):
     adjustItemWindow.mainloop()
     return
 
-def viewBuilds(location):
+def viewBuilds(location, callLocation):
     tableName = None
     viewBuildsWindow = tk.Tk()
     viewBuildsWindow.title("Kits/Builds/RMAs")
@@ -627,11 +627,18 @@ def viewBuilds(location):
     # Right now it seems to work, so it stays
     def returnHelper():
         viewBuildsWindow.destroy()
-        try:
-            if(mainMenuWindow.winfo_exists()):
-                mainMenuWindow.focus_force()
-        except:
-            mainMenu()
+        if(callLocation == None):
+            try:
+                if(mainMenuWindow.winfo_exists()):
+                    mainMenuWindow.focus_force()
+            except:
+                mainMenu()
+        elif(callLocation == 'Admin'):
+            try:
+                Admin("200+200")
+            except:
+                print("Issue returning to Admin Menu")
+                mainMenu()
         return
     
     def wipeTree():
@@ -655,21 +662,57 @@ def viewBuilds(location):
                 buildListBox.insert(i, buildsList[i])
         return
     
+    def editBuild():
+        try:
+            tableNameEditBuild = buildListBox.get(buildListBox.curselection())
+        except:
+            print(buildNameLabel.cget("text"))
+            tableNameEditBuild = buildNameLabel.cget("text")
+        if(tableNameEditBuild[:4] == 'rma_'):
+            database = DG.rmaDatabase
+        if(tableNameEditBuild[:6] == 'build_'):
+            database = DG.buildDatabase
+        if(tableNameEditBuild[:4] == 'kit_'):
+            database = DG.kitDatabase
+        sql = '''SELECT barcode FROM ''' + database + ''' WHERE name = %s;'''
+        cur.execute(sql, [tableNameEditBuild])
+        records = cur.fetchall()
+        if records:
+            barcode = records[0][0]
+            subWindowLoc = childWindowLocation(viewBuildsWindow)
+            viewBuildsWindow.destroy()
+            callLocation = None
+            checkOut(barcode, subWindowLoc, callLocation)
+        return
+    
     def buildSearch(*args):
-        buildsList = []
-        searchItem = '%' + searchBuild.get() + '%'
-        buildListBox.delete(0, tk.END)
-        sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE name ILIKE %s UNION
-                SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name ILIKE %s UNION
-                SELECT * FROM ''' + DG.buildDatabase + ''' WHERE name ILIKE %s;'''
-        cur.execute(sql, [searchItem, searchItem, searchItem])
-        buildRecords = cur.fetchall()
-        if(buildRecords):
-            for build in buildRecords:
-                buildsList.append(build[0])
-            buildsList.sort()
-            for i in range(len(buildsList)):
-                buildListBox.insert(i, buildsList[i])
+        barcodeCheck = searchBuild.get()
+        sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE barcode = %s UNION
+                SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE barcode = %s UNION
+                SELECT * FROM ''' + DG.buildDatabase + ''' WHERE barcode = %s;'''
+        cur.execute(sql, [barcodeCheck, barcodeCheck, barcodeCheck])
+        barcodeRecords = cur.fetchall()
+        if(len(barcodeRecords) > 1):
+            tk.messagebox.showerror("Error", "Multiple builds found with identical barcodes")
+            return
+        elif(barcodeRecords):
+            buildListBox.delete(0, tk.END)
+            buildListBox.insert(0, barcodeRecords[0][0])
+        else:
+            buildsList = []
+            searchItem = '%' + searchBuild.get() + '%'
+            buildListBox.delete(0, tk.END)
+            sql = '''SELECT * FROM ''' + DG.kitDatabase + ''' WHERE name ILIKE %s UNION
+                    SELECT * FROM ''' + DG.rmaDatabase + ''' WHERE name ILIKE %s UNION
+                    SELECT * FROM ''' + DG.buildDatabase + ''' WHERE name ILIKE %s;'''
+            cur.execute(sql, [searchItem, searchItem, searchItem])
+            buildRecords = cur.fetchall()
+            if(buildRecords):
+                for build in buildRecords:
+                    buildsList.append(build[0])
+                buildsList.sort()
+                for i in range(len(buildsList)):
+                    buildListBox.insert(i, buildsList[i])
         return
     
     def deleteBuild():
@@ -766,35 +809,10 @@ def viewBuilds(location):
         
         return
 
-    def editBuild():
-        try:
-            tableNameEditBuild = buildListBox.get(buildListBox.curselection())
-        except:
-            print(buildNameLabel.cget("text"))
-            tableNameEditBuild = buildNameLabel.cget("text")
-        if(tableNameEditBuild[:4] == 'rma_'):
-            database = DG.rmaDatabase
-        if(tableNameEditBuild[:6] == 'build_'):
-            database = DG.buildDatabase
-        if(tableNameEditBuild[:4] == 'kit_'):
-            database = DG.kitDatabase
-        sql = '''SELECT barcode FROM ''' + database + ''' WHERE name = %s;'''
-        cur.execute(sql, [tableNameEditBuild])
-        records = cur.fetchall()
-        if records:
-            barcode = records[0][0]
-            subWindow_x = str(viewBuildsWindow.winfo_x() + 100)
-            subWindow_y = str(viewBuildsWindow.winfo_y() + 50)
-            subWindowLoc = subWindow_x + "+" + subWindow_y
-            viewBuildsWindow.destroy()
-            checkOut(barcode, subWindowLoc)
-            
-        return
+    
     
     def newBuildHelper():
-        subWindow_x = str(viewBuildsWindow.winfo_x() + 100)
-        subWindow_y = str(viewBuildsWindow.winfo_y() + 50)
-        subWindowLoc = subWindow_x + "+" + subWindow_y
+        subWindowLoc = childWindowLocation(viewBuildsWindow)
         bar = DG.createBarcode()
         createNewBuild(bar, subWindowLoc)
         return
@@ -900,8 +918,6 @@ def viewBuilds(location):
             quantityEntry.insert(0, kitQuantity)
             quantityEntry.focus_force()
             
-            print(currentBuild, selectedItemValueList)
-            
             return
         
         viewBuildsWindow.geometry("800x300") 
@@ -916,10 +932,14 @@ def viewBuilds(location):
         newBuildButton.place(relx=.267, rely=.78, anchor='w')
         editBuildButton.place(relx=.38, rely=.92, anchor='center')
         printCodeButton.place(relx=.8, rely = .92, anchor='center')
-        deleteBuildButton.place(relx=.075, rely=.78, anchor='center')
-        refreshButton.place(relx=.188, rely=.85, anchor='center')
         homeButton.place(relx = .925, rely=.92, anchor = 'center')
         
+        if(callLocation == 'Admin'):
+            deleteBuildButton.place(relx=.075, rely=.78, anchor='center')
+            refreshButton.place(relx=.188, rely=.85, anchor='center')
+        else:
+            refreshButton.place(relx=.075, rely=.78, anchor='center')
+            
         buildTree.place(relx=.65, rely=.475, anchor = 'center')
         buildTreeScrollbar.place(relx=.945, rely=.475, anchor = 'center')
         
@@ -938,7 +958,7 @@ def viewBuilds(location):
     buildListBox.config(yscrollcommand=buildScrollbar.set)
     buildNameLabel = tk.Label(viewBuildsWindow, text = '', font=('calibre', 12, 'bold'))
     deleteBuildButton = tk.Button(viewBuildsWindow, text='Delete Kit', command=deleteBuildCheck)
-    editBuildButton = tk.Button(viewBuildsWindow, text='Add Items', command=editBuild)
+    editBuildButton = tk.Button(viewBuildsWindow, text='Add Items', command= lambda: [editBuild()])
     refreshButton = tk.Button(viewBuildsWindow, text='Refresh List', command=populateBuildListBox)
     newBuildButton = tk.Button(viewBuildsWindow, text = 'New Kit', command=newBuildHelper)
     homeButton = tk.Button(viewBuildsWindow, text = "Home", command=returnHelper)
@@ -964,9 +984,13 @@ def viewBuilds(location):
     buildListBox.place(relx=.2, rely=.5, anchor='w')
     buildScrollbar.place(relx=.753, rely=.5, anchor='w')
     newBuildButton.place(relx=.8, rely=.78, anchor='center')
-    deleteBuildButton.place(relx=.2, rely=.78, anchor='center')
-    refreshButton.place(relx=.5, rely=.85, anchor='center')
     homeButton.place(relx=.8, rely=.92, anchor = 'w')
+    
+    if(callLocation == 'Admin'):
+        deleteBuildButton.place(relx=.2, rely=.78, anchor='center')
+        refreshButton.place(relx=.5, rely=.85, anchor='center')    
+    else:
+        refreshButton.place(relx=.2, rely=.78, anchor='center')
     
     populateBuildListBox()
     
@@ -1216,11 +1240,12 @@ def createNewBuild(bar, location):
     newBuildWindow.mainloop()
     return
 
-def checkOut(buildBarcode, location):
+def checkOut(buildBarcode, location, callLocation):
     checkOutWindow = tk.Tk()
     checkOutWindow.title("Check Out")
     checkOutWindow.geometry("800x400+" + location)
     cur = DG.conn.cursor()
+
     
     def quantityCheck(bar, quantity):
         sql = '''SELECT quantity FROM ''' + DG.invDatabase + ''' WHERE barcode = %s'''
@@ -1242,6 +1267,21 @@ def checkOut(buildBarcode, location):
         if(not records):
             tk.messagebox.showerror("Error", "Item not currently in system", parent = checkOutWindow)
             return
+        
+        if(buildBarcode != None):
+            sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' WHERE barcode = %s;'''
+            cur.execute(sql, [buildBarcode])
+            buildRecords = cur.fetchall()
+            if(buildRecords):
+                sql = '''SELECT * FROM ''' + buildRecords[0][0] + ''' WHERE barcode = %s;'''
+                cur.execute(sql, [barEntry.get()])
+                itemAlreadyInBuildRecords = cur.fetchall()
+                if(itemAlreadyInBuildRecords):
+                    tk.messagebox.showerror("Error", "Trying to pull and add identical item to build", parent = checkOutWindow)
+                    barEntry.delete(0, tk.END)
+                    itemQuantityEntry.delete(0, tk.END)
+                    barEntry.focus()
+                    return
         # if(records[0][8] != '0'):
         #     tk.messagebox.showerror("Error", "Adding items from one kit to another is not permitted", parent = checkOutWindow)
         #     barEntry.delete(0,tk.END)
@@ -1267,7 +1307,8 @@ def checkOut(buildBarcode, location):
         if(itemQuantityEntry.get() == ""):
             quantity = 1
         else:
-            quantity = itemQuantityEntry.get()
+            # This hasn't been checked but I don't see why adding .strip() would affect anything negatively
+            quantity = itemQuantityEntry.get().strip()
         
         # Check to make sure that quantity is available in database
         if(not quantityCheck(barEntry.get(), quantity)):
@@ -1352,7 +1393,14 @@ def checkOut(buildBarcode, location):
             buildRecords = cur.fetchall()
             if(buildRecords):
                 buildName = buildRecords[0][0]
-                
+                kitList = []
+                sql = '''SELECT * FROM ''' + buildName + ''';'''
+                cur.execute(sql)
+                currentBuildRecords = cur.fetchall()
+                if(currentBuildRecords):
+                    for currentItem in currentBuildRecords:
+                        kitList.append(currentItem[0])
+                        
                 # Adjust when/if you want to add user to checkout
                 username = None
                 timeVar = datetime.now()
@@ -1363,6 +1411,7 @@ def checkOut(buildBarcode, location):
                     #checkDigitLabel = tk.Label()
                     newLocationsList = []
                     quantityUpdateCheck = False
+                                
                     for line in checkOutTree.get_children():
                         if(line):
                             manID = checkOutTree.item(line).get('values')[0]
@@ -1381,15 +1430,15 @@ def checkOut(buildBarcode, location):
                                 # manID == itemRecords[0][0]
                             
                             ## kitList is a list of the manufacturerid's present in the build
-                            kitList = []
-                            sql = '''SELECT * FROM ''' + buildName + ''';'''
-                            cur.execute(sql)
-                            currentBuildRecords = cur.fetchall()
+                            # kitList = []
+                            # sql = '''SELECT * FROM ''' + buildName + ''';'''
+                            # cur.execute(sql)
+                            # currentBuildRecords = cur.fetchall()
                             
                             # May want to add in a safety here in case somehow the build records are not present
                             
-                            for currentItem in currentBuildRecords:
-                                kitList.append(currentItem[0])
+                            # for currentItem in currentBuildRecords:
+                            #     kitList.append(currentItem[0])
                             if(manID in kitList):
                                 # This statement and the one pulling the barcode below can probably be combined
                                 sql = '''SELECT quantity FROM ''' + buildName + ''' WHERE manufacturerid = %s;'''
@@ -1454,14 +1503,19 @@ def checkOut(buildBarcode, location):
                         def editLocation(*args):
                             #cur = DG.conn.cursor()     
                             #loc is the location within newLocationsTree, it's only used to pull the selectedItemList
-                            loc = newLocationsTree.selection()[0]
+                            try:
+                                loc = newLocationsTree.selection()[0]
+                            except:
+                                if(len(newLocationsTree.get_children()) > 1):
+                                    tk.messagebox.showerror("Error", "Select item to edit location", parent = newLocationsWindow)
+                                    return
+                                else:
+                                    loc = newLocationsTree.get_children()[0]
                             selectedItemList = newLocationsTree.item(loc)['values']
                             barcode = str(selectedItemList[1])
                             manID = str(selectedItemList[0])
-                            # Uncomment once added back into Database_GUI
-                            subWindow_x = str(newLocationsWindow.winfo_x() + 100)
-                            subWindow_y = str(newLocationsWindow.winfo_y() + 50)
-                            subWindowLoc = subWindow_x + "+" + subWindow_y
+
+                            subWindowLoc = childWindowLocation(newLocationsWindow)
                             specifiedRoom = tk.StringVar()
                             
                             def submitLocation():
@@ -1513,6 +1567,7 @@ def checkOut(buildBarcode, location):
                             rackEntry = tk.Entry(adjustLocationWindow)
                             shelfEntry = tk.Entry(adjustLocationWindow)
                             enterLocationButton = tk.Button(adjustLocationWindow, text='Submit', command=submitLocation)
+                            rackEntry.bind('<Return>', lambda e: shelfEntry.focus_force())
                             shelfEntry.bind('<Return>', lambda e: submitLocation())
                             rackEntry.focus_force()
                             
@@ -1526,8 +1581,7 @@ def checkOut(buildBarcode, location):
                             rackEntry.place(relx=.6, rely=.5, anchor='center')
                             shelfEntry.place(relx=.6, rely=.7, anchor='center')
                             
-                            #adjustLocationWindow.focus_force()
-    
+                            adjustLocationWindow.mainloop()
                             return
 
                         def submissionCheck():
@@ -1542,11 +1596,15 @@ def checkOut(buildBarcode, location):
                                 tk.messagebox.showinfo("Success", "Items added into inventory in their new locations", parent = newLocationsWindow)
                                 newLocationsWindow.destroy()
                                 checkOutWindow.destroy()
-                            return
+                            #return
 
-                        subWindow_x = str(checkOutWindow.winfo_x() + 100)
-                        subWindow_y = str(checkOutWindow.winfo_y() + 50)
-                        subWindowLoc = subWindow_x + "+" + subWindow_y
+                        def exitHandler():
+                            if(tk.messagebox.askokcancel("Are you sure?", "Items will be added in without locations", parent = newLocationsWindow)):
+                                newLocationsWindow.destroy()
+                                checkOutWindow.destroy()
+                            return
+    
+                        subWindowLoc = childWindowLocation(checkOutWindow)
                         newLocationsWindow = tk.Tk()
                         newLocationsWindow.title("New Locations")
                         newLocationsWindow.geometry("500x350+" + subWindowLoc)
@@ -1579,10 +1637,12 @@ def checkOut(buildBarcode, location):
                         editItemButton.place(relx=.5, rely=.8, anchor='center')
                         completeButton.place(relx=.5, rely=.9, anchor='center')
                         newLocationsWindow.focus_force()
-                        
+                        newLocationsWindow.protocol("WM_DELETE_WINDOW", exitHandler)
                         newLocationsWindow.mainloop()      
+                        # return
+                    else:
+                        checkOutWindow.destroy()
                         
-                           
                 if(buildName[:4] == "rma_" or buildName[:6] == "build_"):
                     #print(buildName)
                     for line in checkOutTree.get_children(): 
@@ -1623,26 +1683,19 @@ def checkOut(buildBarcode, location):
                                 currentItemUpdatedInvQuantityRecords = cur.fetchall()
                                 sql = '''UPDATE ''' + currentBuildName + ''' SET quantity = %s WHERE barcode = %s;'''
                                 cur.execute(sql, [currentItemUpdatedInvQuantityRecords[0][0] , str(itemCode)])
-                                
-                                
-                                
-                
-                # Original item quantities are established down here, may want to move location
-                
-                    
+  
                     tk.messagebox.showinfo("Success", "Items checked out of inventory", parent = checkOutWindow)
-                    
-                    
-                #receiptScreen.destroy()
+                    checkOutWindow.destroy()
+
             else:
                 tk.messagebox.showerror("Error", 'Build/RMA not found')
                 buildBarEntry.focus_force()
                 buildBarEntry.delete(0, tk.END)
 
-            try:
-                checkOutWindow.destroy()
-            except:
-                print("Tried to destroy check out window but it was already removed\n")
+            # try:
+            #     checkOutWindow.destroy()
+            # except:
+            #     print("Tried to destroy check out window but it was already removed\n")
             #checkOut(None, location)
             return
         
@@ -1691,9 +1744,7 @@ def checkOut(buildBarcode, location):
     
     def completeOrderHelper():
         count = 0
-        subWindow_x = str(checkOutWindow.winfo_x() + 100)
-        subWindow_y = str(checkOutWindow.winfo_y() + 50)
-        subWindowLoc = subWindow_x + "+" + subWindow_y
+        subWindowLoc = childWindowLocation(checkOutWindow)
         for line in checkOutTree.get_children():
             count += 1
         # if(count == 0):
@@ -1757,148 +1808,142 @@ def checkOut(buildBarcode, location):
     
     return
 
+def adminLogin(location):
+    adminLoginWindow = tk.Tk()
+    adminLoginWindow.title("Admin Login")
+    adminLoginWindow.geometry("400x200+" + location)
+    userPass = tk.StringVar()
+    
+    def loginCheck():
+        password = b'$2b$12$STTqL.4AVbfd9eY3YFrl8uSsBaYdL8mupGcdRQRGmE7AH0h0Ag9am'
+        userPass = passEntry.get()
+        passBytes = userPass.encode('utf-8')
+        #passHash = bcrypt.hashpw(passBytes, bcrypt.gensalt())
+        if bcrypt.checkpw(passBytes, password): 
+            subWindowLoc = childWindowLocation(adminLoginWindow)
+            adminLoginWindow.destroy()
+            Admin(subWindowLoc)
+        else:
+            tk.messagebox.showerror("Error", "Incorrect password entered")
+        return
+    
+    adminLabel = tk.Label(adminLoginWindow, text = "Administrator", font = ('calibre', 12))
+    passLabel = tk.Label(adminLoginWindow, text = "Password: ", font = ('calibre', 12))
+    passEntry = tk.Entry(adminLoginWindow, show='*', textvariable = userPass)
+    passEntry.focus_force()
+    loginButton = tk.Button(adminLoginWindow, text = "Login", command = loginCheck)
+    homeButton = tk.Button(adminLoginWindow, text = "Home", command = lambda: [adminLoginWindow.destroy(), mainMenu()])
+    passEntry.bind("<Return>", lambda e : loginCheck())
+    
+    adminLabel.place(relx=.5, rely=.3, anchor = 'center')
+    passLabel.place(relx=.3, rely=.5, anchor='center')
+    passEntry.place(relx=.6, rely=.5, anchor='center')
+    loginButton.place(relx=.5, rely=.75, anchor='center')
+    homeButton.place(relx=.85, rely=.85, anchor='center')
+    
+    adminLoginWindow.mainloop()
+    return
+
 def Admin(location):
+    adminMenuWindow = tk.Tk()
+    adminMenuWindow.title("Admin Menu")
+    adminMenuWindow.geometry("600x400+" + location)
+    adminMenuWindow.focus_force()
+    
     #Function definitions for Admin Menu Items
-    def adminBuildMenu():
-        cur = DG.conn.cursor()
-        adminBuildMenuWindow = tk.Tk()
-        adminBuildMenuWindow.geometry("400x200")
-        adminBuildMenuWindow.title("Build Menu (Admin)")
-        adminBuildMenuWindow.focus_force()
+    # def adminBuildMenu():
+    #     cur = DG.conn.cursor()
+    #     adminBuildMenuWindow = tk.Tk()
+    #     adminBuildMenuWindow.geometry("400x200")
+    #     adminBuildMenuWindow.title("Build Menu (Admin)")
+    #     adminBuildMenuWindow.focus_force()
         
-        def buildSelectionAdmin(*args):
-            adminBuildMenu = tk.Tk()
-            #print("X: ", adminBuildMenuWindow.winfo_x(), "Y: ", adminBuildMenuWindow.winfo_y())
-            subWindow_x = str(adminBuildMenuWindow.winfo_x() + 100)
-            subWindow_y = str(adminBuildMenuWindow.winfo_y() + 50)
-            windowPosition = subWindow_x + "+" + subWindow_y
-            adminBuildMenu.geometry("600x350" + "+" + windowPosition)
-            buildName = buildListBox.get(buildListBox.curselection())
-            adminBuildMenu.title(buildName)
-            adminBuildMenu.focus_force()
+    #     def buildSelectionAdmin(*args):
+    #         adminBuildMenu = tk.Tk()
+    #         #print("X: ", adminBuildMenuWindow.winfo_x(), "Y: ", adminBuildMenuWindow.winfo_y())
+    #         subWindow_x = str(adminBuildMenuWindow.winfo_x() + 100)
+    #         subWindow_y = str(adminBuildMenuWindow.winfo_y() + 50)
+    #         windowPosition = subWindow_x + "+" + subWindow_y
+    #         adminBuildMenu.geometry("600x350" + "+" + windowPosition)
+    #         buildName = buildListBox.get(buildListBox.curselection())
+    #         adminBuildMenu.title(buildName)
+    #         adminBuildMenu.focus_force()
             
-            def fillBuildTree(rec):
-                buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
-                return
+    #         def fillBuildTree(rec):
+    #             buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
+    #             return
             
-            #TODO copy code from DELETE BUILD in main user menu
-            def deleteBuild():
-                print('Delete Build ' + buildName)
-                return
+    #         #TODO copy code from DELETE BUILD in main user menu
+    #         def deleteBuild():
+    #             print('Delete Build ' + buildName)
+    #             return
             
-            sql = '''SELECT * FROM ''' + buildName + ''' ORDER BY timeadded;'''
-            cur.execute(sql)
-            selectedBuildRecords = cur.fetchall()
+    #         sql = '''SELECT * FROM ''' + buildName + ''' ORDER BY timeadded;'''
+    #         cur.execute(sql)
+    #         selectedBuildRecords = cur.fetchall()
             
-            buildNameLabel = tk.Label(adminBuildMenu, text = buildName, font = ('calibre', 12, 'bold'))
-            buildTree = ttk.Treeview(adminBuildMenu, selectmode = 'browse')
-            buildTreeScrollbar = tk.Scrollbar(adminBuildMenu, orient='vertical', command = buildTree.yview)
-            deleteBuildButton = tk.Button(adminBuildMenu, text='Delete Build', command = deleteBuild)
+    #         buildNameLabel = tk.Label(adminBuildMenu, text = buildName, font = ('calibre', 12, 'bold'))
+    #         buildTree = ttk.Treeview(adminBuildMenu, selectmode = 'browse')
+    #         buildTreeScrollbar = tk.Scrollbar(adminBuildMenu, orient='vertical', command = buildTree.yview)
+    #         deleteBuildButton = tk.Button(adminBuildMenu, text='Delete Build', command = deleteBuild)
             
-            buildNameLabel.place(relx=.5, rely=.07, anchor='center')
-            buildTree.place(relx=.5, rely=.45, anchor = 'center')
-            buildTreeScrollbar.place(relx=.89, rely=.45, anchor = 'center')
-            deleteBuildButton.place(relx=.75, rely=.9, anchor='center')
+    #         buildNameLabel.place(relx=.5, rely=.07, anchor='center')
+    #         buildTree.place(relx=.5, rely=.45, anchor = 'center')
+    #         buildTreeScrollbar.place(relx=.89, rely=.45, anchor = 'center')
+    #         deleteBuildButton.place(relx=.75, rely=.9, anchor='center')
             
-            buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
-            buildTree["columns"] = ("1", "2", "3", "4")
-            buildTree['show'] = 'headings' 
-            buildTree.column("1", width = 100, anchor = 'w')
-            buildTree.column("2", width = 200, anchor = 'w')
-            buildTree.column("3", width = 60, anchor = 'w')
-            buildTree.column("4", width = 130, anchor = 'w')
-            buildTree.heading("1", text = "Manufacturer #")
-            buildTree.heading("2", text = "Description")
-            buildTree.heading("3", text = "Quantity")
-            buildTree.heading("4", text = "Time added")
-            for rec in selectedBuildRecords:    
-                fillBuildTree(rec)
+    #         buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
+    #         buildTree["columns"] = ("1", "2", "3", "4")
+    #         buildTree['show'] = 'headings' 
+    #         buildTree.column("1", width = 100, anchor = 'w')
+    #         buildTree.column("2", width = 200, anchor = 'w')
+    #         buildTree.column("3", width = 60, anchor = 'w')
+    #         buildTree.column("4", width = 130, anchor = 'w')
+    #         buildTree.heading("1", text = "Manufacturer #")
+    #         buildTree.heading("2", text = "Description")
+    #         buildTree.heading("3", text = "Quantity")
+    #         buildTree.heading("4", text = "Time added")
+    #         for rec in selectedBuildRecords:    
+    #             fillBuildTree(rec)
             
-            adminBuildMenu.mainloop()
-            return
+    #         adminBuildMenu.mainloop()
+    #         return
 
-        buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
-        buildScrollbar = tk.Scrollbar(adminBuildMenuWindow)
-        returnButton = tk.Button(adminBuildMenuWindow, text = "Return", command = lambda:[adminBuildMenuWindow.destroy(), adminMenu()])
+    #     buildListBox = tk.Listbox(adminBuildMenuWindow, width=30, height=8, selectmode = 'single')
+    #     buildScrollbar = tk.Scrollbar(adminBuildMenuWindow)
+    #     returnButton = tk.Button(adminBuildMenuWindow, text = "Return", command = lambda:[adminBuildMenuWindow.destroy(), adminMenu()])
 
-        sql = '''SELECT name FROM ''' + DG.rmaDatabase + ''' UNION SELECT name FROM ''' + DG.kitDatabase + ''' UNION SELECT name FROM ''' + DG.buildDatabase + ''';'''
-        cur.execute(sql)
-        buildNameRecords = cur.fetchall()
+    #     sql = '''SELECT name FROM ''' + DG.rmaDatabase + ''' UNION SELECT name FROM ''' + DG.kitDatabase + ''' UNION SELECT name FROM ''' + DG.buildDatabase + ''';'''
+    #     cur.execute(sql)
+    #     buildNameRecords = cur.fetchall()
         
-        buildListBox.place(relx=.5, rely=.4, anchor='center')
-        buildScrollbar.place(relx=.7, rely=.4, anchor='center')
-        buildListBox.config(yscrollcommand = buildScrollbar.set)
-        buildListBox.bind('<Double-1>', buildSelectionAdmin)
+    #     buildListBox.place(relx=.5, rely=.4, anchor='center')
+    #     buildScrollbar.place(relx=.7, rely=.4, anchor='center')
+    #     buildListBox.config(yscrollcommand = buildScrollbar.set)
+    #     buildListBox.bind('<Double-1>', buildSelectionAdmin)
         
-        if(buildNameRecords):
-            buildsList = []
-            for name in buildNameRecords:
-                buildsList.append(name[0])
-            buildsList.sort()
-            for i in range(len(buildsList)):
-                buildListBox.insert(i, buildsList[i])
+    #     if(buildNameRecords):
+    #         buildsList = []
+    #         for name in buildNameRecords:
+    #             buildsList.append(name[0])
+    #         buildsList.sort()
+    #         for i in range(len(buildsList)):
+    #             buildListBox.insert(i, buildsList[i])
         
-        returnButton.place(relx=.8, rely=.85, anchor = 'center')
-        adminBuildMenuWindow.mainloop()
+    #     returnButton.place(relx=.8, rely=.85, anchor = 'center')
+    #     adminBuildMenuWindow.mainloop()
+    #     return
+        
+    def adminBuildHelper():
+        subWindowLoc = childWindowLocation(adminMenuWindow)
+        adminMenuWindow.destroy()
+        viewBuilds(subWindowLoc, 'Admin')
         return
-        
+    
     def adminMenu(location):
-        adminMenuWindow = tk.Tk()
-        adminMenuWindow.title("Admin Menu")
-        adminMenuWindow.geometry("600x400+" + location)
-        adminMenuWindow.focus_force()
         
-        backupButton = ttk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
-        removeButton = ttk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
-        bomButton = ttk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
-        buildButton = ttk.Button(adminMenuWindow, text = "Builds", command = lambda: [adminMenuWindow.destroy(), adminBuildMenu()])
-        homeButton = ttk.Button(adminMenuWindow, text = "Home", command = lambda:[adminMenuWindow.destroy(), mainMenu()])
         
-        backupButton.place(relx=.5, rely=.4, anchor='center')
-        removeButton.place(relx=.5, rely=.5, anchor='center')
-        bomButton.place(relx=.5, rely=.6, anchor='center')
-        buildButton.place(relx=.5, rely=.7, anchor='center')
-        homeButton.place(relx=.75, rely=.85, anchor='center')
         
-        adminMenuWindow.mainloop()
-        return
-
-    def adminLogin():
-        adminLoginWindow = tk.Tk()
-        adminLoginWindow.title("Admin Login")
-        adminLoginWindow.geometry("400x200+" + location)
-        userPass = tk.StringVar()
-        
-        def loginCheck():
-            password = b'$2b$12$STTqL.4AVbfd9eY3YFrl8uSsBaYdL8mupGcdRQRGmE7AH0h0Ag9am'
-            userPass = passEntry.get()
-            passBytes = userPass.encode('utf-8')
-            #passHash = bcrypt.hashpw(passBytes, bcrypt.gensalt())
-            if bcrypt.checkpw(passBytes, password): 
-                subWindow_x = str(adminLoginWindow.winfo_x() + 100)
-                subWindow_y = str(adminLoginWindow.winfo_y() + 50)
-                subWindowLoc = subWindow_x + "+" + subWindow_y
-                adminLoginWindow.destroy()
-                adminMenu(subWindowLoc)
-            else:
-                tk.messagebox.showerror("Error", "Incorrect password entered")
-            return
-        
-        adminLabel = tk.Label(adminLoginWindow, text = "Administrator", font = ('calibre', 12))
-        passLabel = tk.Label(adminLoginWindow, text = "Password: ", font = ('calibre', 12))
-        passEntry = tk.Entry(adminLoginWindow, show='*', textvariable = userPass)
-        passEntry.focus_force()
-        loginButton = tk.Button(adminLoginWindow, text = "Login", command = loginCheck)
-        homeButton = tk.Button(adminLoginWindow, text = "Home", command = lambda: [adminLoginWindow.destroy(), mainMenu()])
-        passEntry.bind("<Return>", lambda e : loginCheck())
-        
-        adminLabel.place(relx=.5, rely=.3, anchor = 'center')
-        passLabel.place(relx=.3, rely=.5, anchor='center')
-        passEntry.place(relx=.6, rely=.5, anchor='center')
-        loginButton.place(relx=.5, rely=.75, anchor='center')
-        homeButton.place(relx=.85, rely=.85, anchor='center')
-        
-        adminLoginWindow.mainloop()
         return
     
     def createBOMGUI():
@@ -2286,10 +2331,24 @@ def Admin(location):
         removeItemWindow.mainloop()
         return
     
-    adminLogin()
+    backupButton = ttk.Button(adminMenuWindow, text = "Backup Inventory", command = inventoryBackup)
+    removeButton = ttk.Button(adminMenuWindow, text = "Remove Item", command = lambda:[adminMenuWindow.destroy(), removeItem()])
+    bomButton = ttk.Button(adminMenuWindow, text = "BOM Menu", command = lambda:[adminMenuWindow.destroy(), createBOMGUI()])
+    buildButton = ttk.Button(adminMenuWindow, text = "Builds", command = lambda: [adminBuildHelper()])
+    homeButton = ttk.Button(adminMenuWindow, text = "Home", command = lambda:[adminMenuWindow.destroy(), mainMenu()])
+    
+    backupButton.place(relx=.5, rely=.4, anchor='center')
+    removeButton.place(relx=.5, rely=.5, anchor='center')
+    bomButton.place(relx=.5, rely=.6, anchor='center')
+    buildButton.place(relx=.5, rely=.7, anchor='center')
+    homeButton.place(relx=.75, rely=.85, anchor='center')
+    
+    adminMenuWindow.mainloop()
     
     return
 
+
+# General functions used by all
 def generateBarcode(barcodeEntry, checkDigitLabel):
     cur = DG.conn.cursor()
     barcodeList = []
@@ -2321,6 +2380,12 @@ def generateBarcode(barcodeEntry, checkDigitLabel):
         barcodeEntry.insert(0, barcodeString)
         checkDigitLabel.configure(text=str(checkDigit))
     return sqlCheck
+
+def childWindowLocation(callingWindow):
+    subWindow_x = str(callingWindow.winfo_x() + 100)
+    subWindow_y = str(callingWindow.winfo_y() + 50)
+    subWindowLoc = subWindow_x + "+" + subWindow_y
+    return subWindowLoc
 
 #TODO it might be a good idea to remove the searchType.get() checks and just use searchChoiceBox.get(). 
 # I've had far fewer errors using that with other comboboxes
@@ -2396,7 +2461,11 @@ def mainMenu():
                     kitChoice = tk.StringVar()
                     kitCheckWindow = tk.Tk()
                     kitCheckWindow.title("Kit Check")
-                    kitCheckWindow.geometry("200x200")
+                    subWindow_x = str(mainMenuWindow.winfo_x() + 100)
+                    subWindow_y = str(mainMenuWindow.winfo_y() + 50)
+                    subWindowLoc = subWindow_x + "+" + subWindow_y
+                    kitCheckWindow.geometry("250x200+" + subWindowLoc)
+                    kitCheckWindow.focus_force()
                     
                     kitCheckLabel = tk.Label(kitCheckWindow, text='Select kit item is a part of')
                     kitChoiceList = []
@@ -2453,11 +2522,9 @@ def mainMenu():
         return
     
     def adminMenuHelper():
-        subWindow_x = str(mainMenuWindow.winfo_x() + 100)
-        subWindow_y = str(mainMenuWindow.winfo_y() + 50)
-        subWindowLoc = subWindow_x + "+" + subWindow_y
+        subWindowLoc = childWindowLocation(mainMenuWindow)
         mainMenuWindow.destroy()
-        Admin(subWindowLoc)
+        adminLogin(subWindowLoc)
         return
     
     def barcodeSearchHelper():
@@ -2491,17 +2558,13 @@ def mainMenu():
         return
     
     def buildsHelper():
-        subWindow_x = str(mainMenuWindow.winfo_x() + 100)
-        subWindow_y = str(mainMenuWindow.winfo_y() + 50)
-        subWindowLoc = subWindow_x + "+" + subWindow_y
-        viewBuilds(subWindowLoc)
+        subWindowLoc = childWindowLocation(mainMenuWindow)
+        viewBuilds(subWindowLoc, None)
         return
     
     def checkOutHelper():
-        subWindow_x = str(mainMenuWindow.winfo_x() + 100)
-        subWindow_y = str(mainMenuWindow.winfo_y() + 50)
-        subWindowLoc = subWindow_x + "+" + subWindow_y
-        checkOut(None, subWindowLoc)
+        subWindowLoc = childWindowLocation(mainMenuWindow)
+        checkOut(None, subWindowLoc, None)
         return
     
 
