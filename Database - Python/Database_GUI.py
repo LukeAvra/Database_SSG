@@ -46,28 +46,40 @@ def addItemGUI():
             for rec in manIDInvRecords:
                 tk.messagebox.showinfo("Alert", "Manufacturer Number Records Found\nPlease make sure to enter new kit, quantity and location", parent = newItemWindow)
                 if(rec[8] == '0'):
-                    manIDEntry.delete(0, tk.END)
-                    manIDEntry.insert(0, rec[0])
-                    manNameEntry.delete(0, tk.END)
-                    manNameEntry.insert(0, rec[1])
-                    supplierPartNumEntry.delete(0, tk.END)
-                    supplierPartNumEntry.insert(0, rec[2])
-                    supplierNameEntry.delete(0, tk.END)
-                    supplierNameEntry.insert(0, rec[3])
-                    descriptionEntry.delete("1.0", tk.END)
-                    descriptionEntry.insert("1.0", rec[4])
+                    #print("Rec[0]: ", rec[0], "Rec[1]: ", rec[1], "Rec[2]: ", rec[2], "Rec[3]: ", rec[3], "Rec[4]: ", rec[4])
+                    if(rec[0]):
+                        manIDEntry.delete(0, tk.END)
+                        manIDEntry.insert(0, rec[0])
+                    if(rec[1]):
+                        manNameEntry.delete(0, tk.END)
+                        manNameEntry.insert(0, rec[1])
+                    if(rec[2]):
+                        supplierPartNumEntry.delete(0, tk.END)
+                        supplierPartNumEntry.insert(0, rec[2])
+                    if(rec[3]):
+                        supplierNameEntry.delete(0, tk.END)
+                        supplierNameEntry.insert(0, rec[3])
+                    if(rec[4]):
+                        descriptionEntry.delete("1.0", tk.END)
+                        descriptionEntry.insert("1.0", rec[4])
                     return
             # If nothing was found that is NOT within a kit, then just pull from first available record
-            manIDEntry.delete(0, tk.END)
-            manIDEntry.insert(0, manIDInvRecords[0][0])
-            manNameEntry.delete(0, tk.END)
-            manNameEntry.insert(0, manIDInvRecords[0][1])
-            supplierPartNumEntry.delete(0, tk.END)
-            supplierPartNumEntry.insert(0, manIDInvRecords[0][2])
-            supplierNameEntry.delete(0, tk.END)
-            supplierNameEntry.insert(0, manIDInvRecords[0][3])
-            descriptionEntry.delete("1.0", tk.END)
-            descriptionEntry.insert("1.0", manIDInvRecords[0][4])
+            #print("manIDInvRecords[0][0]: ", manIDInvRecords[0][0], "manIDInvRecords[0][1]: ", manIDInvRecords[0][1], "manIDInvRecords[0][2]: ", manIDInvRecords[0][2], "manIDInvRecords[0][3]: ", manIDInvRecords[0][3], "manIDInvRecords[0][4]: ", manIDInvRecords[0][4])
+            if(manIDInvRecords[0][0]):
+                manIDEntry.delete(0, tk.END)
+                manIDEntry.insert(0, manIDInvRecords[0][0])
+            if(manIDInvRecords[0][1]):
+                manNameEntry.delete(0, tk.END)
+                manNameEntry.insert(0, manIDInvRecords[0][1])
+            if(manIDInvRecords[0][2]):
+                supplierPartNumEntry.delete(0, tk.END)
+                supplierPartNumEntry.insert(0, manIDInvRecords[0][2])
+            if(manIDInvRecords[0][3]):
+                supplierNameEntry.delete(0, tk.END)
+                supplierNameEntry.insert(0, manIDInvRecords[0][3])
+            if(manIDInvRecords[0][4]):
+                descriptionEntry.delete("1.0", tk.END)
+                descriptionEntry.insert("1.0", manIDInvRecords[0][4])
         return
     
     def pullBarcode():
