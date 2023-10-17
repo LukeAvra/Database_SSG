@@ -185,7 +185,7 @@ def main():
 
     if(arguments()):
         args = arguments()
-        for i in range(12):
+        for i in range(1):
             for i in args:
                 if(i.strip(',').isalpha()):
                     base = "C:\\Users\\Luke\\Desktop\\Letters"

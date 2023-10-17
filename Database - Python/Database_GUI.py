@@ -525,7 +525,6 @@ def adjustItemGUI(barcode_for_adjustment, location):
     shelfLabel = tk.Label(adjustItemWindow, text = 'Shelf: ', font=('calibre', 12))
     shelfLocationLabel = tk.Label(adjustItemWindow, text = 'Shelf Location: ', font=('calibre', 12))
     
-    # TODO change this to allow changing kits from adjustItemGUI?
     if(invRecords[0][8] == '0'):
         kitName = 'No Kit/RMA/Build'
     else:
@@ -661,9 +660,14 @@ def viewBuilds(location, callLocation):
     def populateBuildListBox():
         buildListBox.delete(0, tk.END)
         buildsList = []
-        sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' UNION
-                SELECT name FROM ''' + DG.rmaDatabase + ''' UNION
-                SELECT name FROM ''' + DG.buildDatabase + ''';'''
+        if(callLocation != 'Admin'):
+            sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' UNION
+                    SELECT name FROM ''' + DG.rmaDatabase + ''' WHERE userview = 1 UNION
+                    SELECT name FROM ''' + DG.buildDatabase + ''' WHERE userview = 1;'''
+        else:
+            sql = '''SELECT name FROM ''' + DG.kitDatabase + ''' UNION
+                    SELECT name FROM ''' + DG.rmaDatabase + ''' UNION
+                    SELECT name FROM ''' + DG.buildDatabase + ''';'''
         cur.execute(sql)
         buildNameRecords = cur.fetchall()
         if(buildNameRecords):
@@ -678,7 +682,7 @@ def viewBuilds(location, callLocation):
         try:
             tableNameEditBuild = buildListBox.get(buildListBox.curselection())
         except:
-            print(buildNameLabel.cget("text"))
+            #print(buildNameLabel.cget("text"))
             tableNameEditBuild = buildNameLabel.cget("text")
         if(tableNameEditBuild[:4] == 'rma_'):
             database = DG.rmaDatabase
@@ -820,14 +824,41 @@ def viewBuilds(location, callLocation):
         noButton.place(relx=.35, rely=.7, anchor='center')
         
         return
-
-    
     
     def newBuildHelper():
         subWindowLoc = childWindowLocation(viewBuildsWindow)
         bar = DG.createBarcode()
         createNewBuild(bar, subWindowLoc)
         return
+    
+    
+    
+    
+    
+    def completeBuild():
+        currentBuild = buildNameLabel.cget("text")
+        doubleCheck = tk.messagebox.askquestion("Caution", 'Build/RMA will be removed and only accessible from Admin screen\nAre you sure you want to continue?', parent = viewBuildsWindow)
+        if(doubleCheck == 'yes'):
+            print('User clicked yes')
+            if(currentBuild[:3] == 'rma'):
+                database = DG.rmaDatabase
+            elif(currentBuild[:5] == 'build'):
+                database = DG.buildDatabase
+            else:
+                tk.messagebox.showerror("Error", "Couldn't get build type")
+                return
+            sql = '''UPDATE ''' + database + ''' SET userview = 0 WHERE name = ''' + currentBuild + ''';'''
+            cur.execute(sql)
+            location = childWindowLocation(viewBuildsWindow)
+            viewBuildsWindow.destroy()
+            viewBuilds(location, None)
+        else:
+            print("User clicked no")
+        return
+    
+    
+    
+    
     
     def buildSelection(event):
         try:
@@ -842,6 +873,18 @@ def viewBuilds(location, callLocation):
         def fillBuildTree(rec):
             buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
             return
+        
+        def getBuildType(currentBuild):
+            if(currentBuild[:3] == 'kit'):
+                buildType = 'Kit'
+            elif(currentBuild[:3] == 'rma'):
+                buildType = 'RMA'
+            elif(currentBuild[:5] == 'build'):
+                buildType = 'Build'
+            else:
+                buildType = None
+            return buildType
+        
         def printHelper():
             tableName = buildNameLabel.cget("text")
             if(tableName[:4] == "rma_"):
@@ -870,13 +913,15 @@ def viewBuilds(location, callLocation):
             adjustBuildGUI = tk.Tk()
             adjustBuildGUI.geometry("300x200+" + subWindowLoc)
         
-            if(currentBuild[:3] == 'kit'):
-                buildType = 'Kit'
-            elif(currentBuild[:3] == 'rma'):
-                buildType = 'RMA'
-            elif(currentBuild[:5] == 'build'):
-                buildType = 'Build'
-            else:
+            # if(currentBuild[:3] == 'kit'):
+            #     buildType = 'Kit'
+            # elif(currentBuild[:3] == 'rma'):
+            #     buildType = 'RMA'
+            # elif(currentBuild[:5] == 'build'):
+            #     buildType = 'Build'
+            # else:
+            buildType = getBuildType(currentBuild)
+            if(buildType == None):
                 tk.messagebox.showerror("Error", "Couldn't get build type", parent = adjustBuildGUI)
                 adjustBuildGUI.destroy()
                 return
@@ -941,7 +986,7 @@ def viewBuilds(location, callLocation):
         buildNameLabel.place(relx=.65, rely=.06, anchor='center')
         buildListBox.place(relx=.075, rely=.5, anchor='w')
         buildScrollbar.place(relx=.283, rely=.5, anchor='w')
-        newBuildButton.place(relx=.267, rely=.78, anchor='w')
+        newBuildButton.place(relx=.19, rely=.78, anchor='w')
         editBuildButton.place(relx=.38, rely=.92, anchor='center')
         printCodeButton.place(relx=.8, rely = .92, anchor='center')
         homeButton.place(relx = .925, rely=.92, anchor = 'center')
@@ -951,7 +996,13 @@ def viewBuilds(location, callLocation):
             refreshButton.place(relx=.188, rely=.85, anchor='center')
         else:
             refreshButton.place(relx=.075, rely=.78, anchor='center')
-            
+        
+        finishBuildButton.place_forget()
+        buildType = getBuildType(tableName)
+        if(buildType == 'Build' or buildType == 'RMA'):
+            finishBuildButton.place(relx=.655, rely=.92, anchor='center')
+        
+        
         buildTree.place(relx=.65, rely=.475, anchor = 'center')
         buildTreeScrollbar.place(relx=.945, rely=.475, anchor = 'center')
         
@@ -970,9 +1021,10 @@ def viewBuilds(location, callLocation):
     buildListBox.config(yscrollcommand=buildScrollbar.set)
     buildNameLabel = tk.Label(viewBuildsWindow, text = '', font=('calibre', 12, 'bold'))
     deleteBuildButton = tk.Button(viewBuildsWindow, text='Delete Kit', command=deleteBuildCheck)
+    finishBuildButton = tk.Button(viewBuildsWindow, text='Complete Build', command=completeBuild)
     editBuildButton = tk.Button(viewBuildsWindow, text='Add Items', command= lambda: [editBuild()])
     refreshButton = tk.Button(viewBuildsWindow, text='Refresh List', command=populateBuildListBox)
-    newBuildButton = tk.Button(viewBuildsWindow, text = 'New Kit', command=newBuildHelper)
+    newBuildButton = tk.Button(viewBuildsWindow, text = 'New Kit/Build/RMA', command=newBuildHelper)
     homeButton = tk.Button(viewBuildsWindow, text = "Home", command=returnHelper)
     
     buildTree = ttk.Treeview(viewBuildsWindow, selectmode = 'browse')
@@ -995,7 +1047,7 @@ def viewBuilds(location, callLocation):
     searchEntry.place(relx=.35, rely=.2, anchor='w')
     buildListBox.place(relx=.2, rely=.5, anchor='w')
     buildScrollbar.place(relx=.753, rely=.5, anchor='w')
-    newBuildButton.place(relx=.8, rely=.78, anchor='center')
+    newBuildButton.place(relx=.697, rely=.78, anchor='center')
     homeButton.place(relx=.8, rely=.92, anchor = 'w')
     
     if(callLocation == 'Admin'):
@@ -1165,7 +1217,8 @@ def createNewBuild(bar, location):
     
     def createBuild():
         if(buildEntry.get()):
-            buildName = buildEntry.get()
+            buildName = str(buildEntry.get())
+            buildName = buildName.replace("-", "_")
         else:
             tk.messagebox.showerror("Error", "Please enter a build label")
             return
@@ -1188,14 +1241,14 @@ def createNewBuild(bar, location):
             tk.messagebox.showerror("Error", "Build already exists in database", parent = newBuildWindow)
         else:
             if(tableVar == 'Kit_'):
-                sql = '''INSERT INTO ''' + DG.kitDatabase + ''' (name, barcode) VALUES (%s, %s);'''
-                cur.execute(sql, [tableName.lower(), bar])
+                sql = '''INSERT INTO ''' + DG.kitDatabase + ''' (name, barcode, userview) VALUES (%s, %s, %s);'''
+                cur.execute(sql, [tableName.lower(), bar, 1])
             elif(tableVar == 'RMA_'):
-                sql = '''INSERT INTO ''' + DG.rmaDatabase + ''' (name, barcode) VALUES (%s, %s);'''
-                cur.execute(sql, [tableName.lower(), bar])
+                sql = '''INSERT INTO ''' + DG.rmaDatabase + ''' (name, barcode, userview) VALUES (%s, %s, %s);'''
+                cur.execute(sql, [tableName.lower(), bar, 1])
             elif(tableVar == 'Build_'):
-                sql = '''INSERT INTO ''' + DG.buildDatabase + ''' (name, barcode) VALUES (%s, %s);'''
-                cur.execute(sql, [tableName.lower(), bar])
+                sql = '''INSERT INTO ''' + DG.buildDatabase + ''' (name, barcode, userview) VALUES (%s, %s, %s);'''
+                cur.execute(sql, [tableName.lower(), bar, 1])
                 
             sql = '''INSERT INTO ''' + DG.barDatabase + '''(code) VALUES (%s);'''
             cur.execute(sql, [bar])
@@ -1862,6 +1915,10 @@ def Admin(location):
     adminMenuWindow.geometry("600x400+" + location)
     adminMenuWindow.focus_force()
     
+    
+    # TODO
+    # Double check that all of this is calling the typical build menu and then remove if unecessary 
+    
     #Function definitions for Admin Menu Items
     # def adminBuildMenu():
     #     cur = DG.conn.cursor()
@@ -1885,7 +1942,7 @@ def Admin(location):
     #             buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
     #             return
             
-    #         #TODO copy code from DELETE BUILD in main user menu
+    #         #copy code from DELETE BUILD in main user menu
     #         def deleteBuild():
     #             print('Delete Build ' + buildName)
     #             return
@@ -1952,12 +2009,6 @@ def Admin(location):
         viewBuilds(subWindowLoc, 'Admin')
         return
     
-    def adminMenu(location):
-        
-        
-        
-        return
-    
     def createBOMGUI():
         bomWindow = tk.Tk()
         bomWindow.geometry("600x200")
@@ -1965,7 +2016,8 @@ def Admin(location):
         cur = DG.conn.cursor()
         
         def createBOMID():
-            bomID = random.randrange(0, 10000)
+            #Smallint can hold 32767, I'm assuming this is all we will need for the forseeable future
+            bomID = random.randrange(0, 32750)
             sql = '''SELECT * FROM ''' + DG.bomDatabase + ''' WHERE bom_id = %s'''
             cur.execute(sql, [bomID])
             records = cur.fetchall()
@@ -2164,11 +2216,9 @@ def Admin(location):
                 tk.messagebox.showerror('Error', errorMessage)
             
         def returnHelper():
-            subWindow_x = str(bomWindow.winfo_x() + 100)
-            subWindow_y = str(bomWindow.winfo_y() + 50)
-            subWindowLoc = subWindow_x + "+" + subWindow_y
+            subWindowLoc = childWindowLocation(bomWindow)
             bomWindow.destroy()
-            adminMenu(subWindowLoc)
+            Admin(subWindowLoc)
             return
             
         nameLabel = tk.Label(bomWindow, text = "Select item to create/edit BOM")
@@ -2176,7 +2226,7 @@ def Admin(location):
         bomEntryLabel = tk.Label(bomWindow, text = "Type Manufacturer Numbers for \nBOM inventory check")
         nameList = []
         itemName = tk.StringVar()
-        sql = '''SELECT Description FROM ''' + DG.invDatabase + ''' ORDER BY Description'''
+        sql = '''SELECT DISTINCT manufacturerid FROM ''' + DG.invDatabase + ''' ORDER BY manufacturerid'''
         cur.execute(sql)
         records = cur.fetchall()
         for record in records:
@@ -2318,11 +2368,9 @@ def Admin(location):
             return
 
         def returnHelper():
-            subWindow_x = str(removeItemWindow.winfo_x() + 100)
-            subWindow_y = str(removeItemWindow.winfo_y() + 50)
-            subWindowLoc = subWindow_x + "+" + subWindow_y
+            subWindowLoc = childWindowLocation(removeItemWindow)
             removeItemWindow.destroy() 
-            adminMenu(subWindowLoc)
+            Admin(subWindowLoc)
             return
 
         removeVar.trace_add('write', removeCheckHelper)
