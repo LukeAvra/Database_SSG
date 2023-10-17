@@ -982,7 +982,7 @@ def viewBuilds(location, callLocation):
         searchEntry.place(relx=.131, rely=.2, anchor='w')
         buildNameLabel.place(relx=.65, rely=.06, anchor='center')
         buildListBox.place(relx=.075, rely=.5, anchor='w')
-        buildScrollbar.place(relx=.283, rely=.5, anchor='w')
+        buildScrollbar.place(in_=buildListBox, relheight = 1.0, relx=.92, rely=.5, anchor='w')
         newBuildButton.place(relx=.19, rely=.78, anchor='w')
         editBuildButton.place(relx=.38, rely=.92, anchor='center')
         printCodeButton.place(relx=.8, rely = .92, anchor='center')
@@ -1001,7 +1001,7 @@ def viewBuilds(location, callLocation):
         
         
         buildTree.place(relx=.65, rely=.475, anchor = 'center')
-        buildTreeScrollbar.place(relx=.945, rely=.475, anchor = 'center')
+        buildTreeScrollbar.place(in_=buildTree, relheight = .9, relx=.98, rely=.5, anchor = 'center')
         
         for rec in selectedBuildRecords:    
             fillBuildTree(rec)
@@ -1014,7 +1014,7 @@ def viewBuilds(location, callLocation):
     searchLabel = tk.Label(viewBuildsWindow, text = "Search: ")
     searchEntry = tk.Entry(viewBuildsWindow, textvariable=searchBuild)
     buildListBox = tk.Listbox(viewBuildsWindow, width=30, height=8, selectmode = 'single')
-    buildScrollbar = tk.Scrollbar(viewBuildsWindow)
+    buildScrollbar = tk.Scrollbar(viewBuildsWindow, command=buildListBox.yview)
     buildListBox.config(yscrollcommand=buildScrollbar.set)
     buildNameLabel = tk.Label(viewBuildsWindow, text = '', font=('calibre', 12, 'bold'))
     deleteBuildButton = tk.Button(viewBuildsWindow, text='Delete Kit', command=deleteBuildCheck)
@@ -1043,7 +1043,7 @@ def viewBuilds(location, callLocation):
     searchLabel.place(relx=.15, rely=.2, anchor = 'w')
     searchEntry.place(relx=.35, rely=.2, anchor='w')
     buildListBox.place(relx=.2, rely=.5, anchor='w')
-    buildScrollbar.place(relx=.753, rely=.5, anchor='w')
+    buildScrollbar.place(in_=buildListBox, relheight = 1.0, relx=.92, rely=.5, anchor='w')
     newBuildButton.place(relx=.697, rely=.78, anchor='center')
     homeButton.place(relx=.8, rely=.92, anchor = 'w')
     
