@@ -839,7 +839,6 @@ def viewBuilds(location, callLocation):
         currentBuild = buildNameLabel.cget("text")
         doubleCheck = tk.messagebox.askquestion("Caution", 'Build/RMA will be removed and only accessible from Admin screen\nAre you sure you want to continue?', parent = viewBuildsWindow)
         if(doubleCheck == 'yes'):
-            print('User clicked yes')
             if(currentBuild[:3] == 'rma'):
                 database = DG.rmaDatabase
             elif(currentBuild[:5] == 'build'):
@@ -847,13 +846,11 @@ def viewBuilds(location, callLocation):
             else:
                 tk.messagebox.showerror("Error", "Couldn't get build type")
                 return
-            sql = '''UPDATE ''' + database + ''' SET userview = 0 WHERE name = ''' + currentBuild + ''';'''
-            cur.execute(sql)
+            sql = '''UPDATE ''' + database + ''' SET userview = 0 WHERE name = %s;'''
+            cur.execute(sql, [currentBuild])
             location = childWindowLocation(viewBuildsWindow)
             viewBuildsWindow.destroy()
             viewBuilds(location, None)
-        else:
-            print("User clicked no")
         return
     
     
