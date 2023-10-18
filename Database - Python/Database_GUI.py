@@ -902,7 +902,7 @@ def viewBuilds(location, callLocation):
             selectedItemValueList = buildTree.item(buildTree.focus())['values']
             currentBuild = buildNameLabel.cget("text")
             kitQuantity = selectedItemValueList[2]
-            manID = selectedItemValueList[0]
+            manID = str(selectedItemValueList[0])
             
             subWindow_x = str(viewBuildsWindow.winfo_x() + 100)
             subWindow_y = str(viewBuildsWindow.winfo_y() + 50)
@@ -1597,7 +1597,7 @@ def checkOut(buildBarcode, location, callLocation):
                                 locationRecords = cur.fetchall()
                                 currentLocation = locationRecords[0][0] + " " + chr(locationRecords[0][1]) + '-' + str(locationRecords[0][2])
                                 
-                                labelText = selectedItemList[0].lower()
+                                labelText = str(selectedItemList[0]).lower()
                                 labelText = labelText + " " + currentLocation
                                 # locationRecords[0][4] is the barcode
                                 PL.createBarcodeImage(labelText, locationRecords[0][4])
