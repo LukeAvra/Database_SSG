@@ -130,10 +130,10 @@ def addItemGUI():
 
         newBomID = None
         
-        if(room.get() == ""):
+        if(roomChoiceBox.get() == ""):
             newRoom = None
         else:
-            newRoom = room.get()
+            newRoom = roomChoiceBox.get()
         
         if(rackEntry.get() == ""):
             newRack = None
@@ -380,7 +380,6 @@ def adjustItemGUI(barcode_for_adjustment, location):
             return
             
         adjustedroom = roomChoiceBox.get()
-        print(adjustedroom)
         # This will probably need to be adjusted to allow for doubled letters
         # Just parse the string and maybe add them together? Shouldn't cause an issue
         if(rackEntry.get() == ""):
