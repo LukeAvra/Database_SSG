@@ -444,20 +444,6 @@ def adjustItemGUI(barcode_for_adjustment, location):
                             END'''
                     cur.execute(sql, [adjustedManID, adjustedManName, adjustedSupplierPartNum, adjustedSupplierName, adjustedDescription, invRecords[0][0]])
         
-        # I believe all of this can be removed now that we're using barcodes as keys
-        # Leaving it here until further testing is done to make sure
-# =============================================================================
-#         # Check if Manufacturer ID is already in system
-#         sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE ManufacturerID = %s'''
-#         cur.execute(sql, [adjustedManID])
-#         manIDRecords = cur.fetchall()
-#         
-#         # Check for records of Manufacturer ID with discrepancy of reusing the same ID
-#         if(manIDRecords and manIDRecords[0][0] != invRecords[0][0]):
-#             tk.messagebox.showerror('Error', 'Manufacturer Number has already been found in our system')
-#             return
-# =============================================================================
-
         sql = '''UPDATE ''' + DG.invDatabase + '''
                  SET ManufacturerID = %s,
                      Manufacturer = %s,
@@ -479,7 +465,6 @@ def adjustItemGUI(barcode_for_adjustment, location):
                  WHERE Barcode = %s;
                  END'''
         cur.execute(sql, [adjustedroom, adjustedrack, adjustedshelf, adjustedshelfLocation, adjustedBarcode, barcode_for_adjustment])
-        
         
         sql = '''SELECT * FROM ''' + DG.barDatabase + ''' WHERE code = %s'''
         cur.execute(sql, [barcode_for_adjustment])
@@ -615,10 +600,6 @@ def adjustItemGUI(barcode_for_adjustment, location):
     adjustButton.place(relx= .5, rely= .94, anchor='center')
 
     #manIDEntry.bind("<FocusOut>", checkAdjustments)
-
-
-
-
     adjustItemWindow.focus_force()
     adjustItemWindow.mainloop()
     return
@@ -2460,7 +2441,7 @@ def mainMenu():
     mainMenuWindow.focus_force()
     
     choiceList = ['Barcode', 'Manufacturer Number', 'Item Name']
-    
+
     searchChoiceBox = ttk.Combobox(
                         mainMenuWindow,
                         state='readonly',
