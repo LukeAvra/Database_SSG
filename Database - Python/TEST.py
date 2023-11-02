@@ -27,18 +27,14 @@ def mainMenu():
 
 def main():
     DG.main()
-    
-    def fuck(x):
-        x += 5
-        return
-    
-    x = 5
-    fuck(x)
-    print(x)
-    
-    DG.close()
-    
-    
+    cur = DG.conn.cursor()
+    sql = 'select name from ssg_builds UNION select name from ssg_rmas UNION select name from ssg_kits;'
+    cur.execute(sql)
+    records = cur.fetchall()
+    for rec in records:
+        sql = '''ALTER TABLE ''' + rec[0] + ''' ALTER COLUMN description TYPE VARCHAR(1000);'''
+        print(sql)
+        cur.execute(sql)
     
     return
 

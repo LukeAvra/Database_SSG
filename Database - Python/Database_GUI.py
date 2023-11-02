@@ -1235,7 +1235,7 @@ def createNewBuild(bar, location):
                         Manufacturer VARCHAR(100),
                         SupplierPartNum VARCHAR(100),
                         Supplier VARCHAR(100),
-                        Description VARCHAR(100),
+                        Description VARCHAR(1000),
                         Quantity INT,
                         Barcode VARCHAR(100),
                         username VARCHAR(100),
