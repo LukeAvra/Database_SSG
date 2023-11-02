@@ -1734,11 +1734,6 @@ def checkOut(buildBarcode, location, callLocation):
                 buildBarEntry.focus_force()
                 buildBarEntry.delete(0, tk.END)
 
-            # try:
-            #     checkOutWindow.destroy()
-            # except:
-            #     print("Tried to destroy check out window but it was already removed\n")
-            #checkOut(None, location)
             return
         
         
