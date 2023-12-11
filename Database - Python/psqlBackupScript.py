@@ -69,6 +69,7 @@ def createFile(basePath):
         os.mkdir(basePath + "\\" + year + "\\" + month)
     
     filePath = basePath + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
+    filePathForDump = basePath + "\\" + year + "\\" + month + "\\" + dt_str + ".sql" 
     sqlFile = open(filePath, 'w')
     for db in dbList:
         insertion(sqlFile, db)
