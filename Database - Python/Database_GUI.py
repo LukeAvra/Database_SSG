@@ -848,7 +848,7 @@ def viewBuilds(location, callLocation):
         wipeTree()
     
         def fillBuildTree(rec):
-            buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[8])) 
+            buildTree.insert("", 'end', values=(rec[0], rec[4], rec[5], rec[6], rec[8])) 
             return
         
         def getBuildType(currentBuild):
@@ -880,15 +880,24 @@ def viewBuilds(location, callLocation):
         
         def adjustBuildItemHelper(*args):
             selectedItemValueList = buildTree.item(buildTree.focus())['values']
+            print(selectedItemValueList)
             currentBuild = buildNameLabel.cget("text")
-            kitQuantity = selectedItemValueList[2]
             manID = str(selectedItemValueList[0])
+            description = str(selectedItemValueList[1])
+            if len(description) > 28:
+                description = description[:28] + "..."
+            kitQuantity = selectedItemValueList[2]
+            barcode = str(selectedItemValueList[3])
             
+            if len(barcode) < 12:
+                for i in range(12-len(barcode)):
+                    barcode = "0" + barcode
+            print(barcode)
             subWindow_x = str(viewBuildsWindow.winfo_x() + 100)
             subWindow_y = str(viewBuildsWindow.winfo_y() + 50)
             subWindowLoc = subWindow_x + "+" + subWindow_y
             adjustBuildGUI = tk.Tk()
-            adjustBuildGUI.geometry("300x200+" + subWindowLoc)
+            adjustBuildGUI.geometry("500x300+" + subWindowLoc)
         
             # if(currentBuild[:3] == 'kit'):
             #     buildType = 'Kit'
@@ -914,22 +923,28 @@ def viewBuilds(location, callLocation):
                 
                 return
             
-            sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE manufacturerID = %s;'''
-            cur.execute(sql, [manID])
-            invRecords = cur.fetchall()
-            if(buildType == 'Kit'):
-                for rec in invRecords:                
-                    if(rec[8] == currentBuild):
-                        currentItemBarcode = rec[6]
-            else:
-                for rec in invRecords:
-                    if(rec[8] == '0'):
-                        currentItemBarcode = rec[6]
+            # sql = '''SELECT * FROM ''' + DG.invDatabase + ''' WHERE barcode = %s;'''
+            # cur.execute(sql, [barcode])
+            # invRecords = cur.fetchall()
+            # #print(invRecords)
+            # if(buildType == 'Kit'):
+            #     for rec in invRecords:
+            #         print(rec[8], " --- Current Build: ", currentBuild)
+            #         if(rec[8] == currentBuild):
+            #             currentItemBarcode = rec[6]
+            # else:
+            #     for rec in invRecords:
+            #         print(rec[8])
+            #         if(rec[8] == '0'):
+            #             currentItemBarcode = rec[6]
             
             
             currentNameLabel = tk.Label(adjustBuildGUI, text = currentBuild, font=('calibre', 14, 'bold'))
             manIDLabel = tk.Label(adjustBuildGUI, text = "Man. #:", font=('calibre', 12, 'bold'))
             manIDPulledLabel = tk.Label(adjustBuildGUI, text = "", font=('calibre', 12))
+            descriptionLabel = tk.Label(adjustBuildGUI, text = "Description:", font=('calibre', 12, 'bold'))
+            descriptionPulledLabel = tk.Label(adjustBuildGUI, text = "", font=('calibre', 12))
+            
             barcodeLabel = tk.Label(adjustBuildGUI, text = "Barcode:", font=('calibre', 12, 'bold'))
             barcodePulledLabel = tk.Label(adjustBuildGUI, text = "", font=('calibre', 12))
             quantityLabel = tk.Label(adjustBuildGUI, text = "Quantity:", font=('calibre', 12, 'bold'))
@@ -938,32 +953,35 @@ def viewBuilds(location, callLocation):
             deleteButton = tk.Button(adjustBuildGUI, text='Delete Item', command=deleteBuildItem)
             
             currentNameLabel.place(relx=.5, rely=.1, anchor='center')
-            manIDLabel.place(relx=.35, rely=.25, anchor='e')
-            manIDPulledLabel.place(relx=.4, rely=.25, anchor='w')
-            barcodeLabel.place(relx=.35, rely=.4, anchor='e')
-            barcodePulledLabel.place(relx=.4, rely=.4, anchor='w')
-            quantityLabel.place(relx=.35, rely=.55, anchor='e')
-            quantityEntry.place(relx=.4, rely=.55, anchor='w')
-            submitButton.place(relx=.35, rely=.8, anchor='center')
-            deleteButton.place(relx=.65, rely=.8, anchor='center')
+            manIDLabel.place(relx=.35, rely=.3, anchor='e')
+            manIDPulledLabel.place(relx=.4, rely=.3, anchor='w')
+            descriptionLabel.place(relx=.35, rely=.45, anchor='e')
+            descriptionPulledLabel.place(relx=.4, rely=.45, anchor='w')
+            barcodeLabel.place(relx=.35, rely=.6, anchor='e')
+            barcodePulledLabel.place(relx=.4, rely=.6, anchor='w')
+            quantityLabel.place(relx=.35, rely=.75, anchor='e')
+            quantityEntry.place(relx=.4, rely=.75, anchor='w')
+            submitButton.place(relx=.35, rely=.9, anchor='center')
+            deleteButton.place(relx=.65, rely=.9, anchor='center')
             
             manIDPulledLabel.configure(text=manID)
-            barcodePulledLabel.configure(text=currentItemBarcode)
+            barcodePulledLabel.configure(text=barcode)
+            descriptionPulledLabel.configure(text=description)
             quantityEntry.insert(0, kitQuantity)
             quantityEntry.focus_force()
             
             return
         
-        viewBuildsWindow.geometry("800x300") 
+        viewBuildsWindow.geometry("1000x300") 
         buildNameLabel.config(text = buildListBox.get(buildListBox.curselection()))
         
         printCodeButton = tk.Button(viewBuildsWindow, text = "Print Barcode", command = printHelper)
-        searchLabel.place(relx=.056, rely=.2, anchor = 'w')
-        searchEntry.place(relx=.131, rely=.2, anchor='w')
+        searchLabel.place(relx=.045, rely=.2, anchor = 'w')
+        searchEntry.place(relx=.105, rely=.2, anchor='w')
         buildNameLabel.place(relx=.65, rely=.06, anchor='center')
-        buildListBox.place(relx=.075, rely=.5, anchor='w')
+        buildListBox.place(relx=.06, rely=.5, anchor='w')
         buildScrollbar.place(in_=buildListBox, relheight = 1.0, relx=.92, rely=.5, anchor='w')
-        newBuildButton.place(relx=.19, rely=.78, anchor='w')
+        newBuildButton.place(relx=.152, rely=.78, anchor='w')
         editBuildButton.place(relx=.38, rely=.92, anchor='center')
         printCodeButton.place(relx=.8, rely = .92, anchor='center')
         homeButton.place(relx = .925, rely=.92, anchor = 'center')
@@ -972,7 +990,7 @@ def viewBuilds(location, callLocation):
             deleteBuildButton.place(relx=.075, rely=.78, anchor='center')
             refreshButton.place(relx=.188, rely=.85, anchor='center')
         else:
-            refreshButton.place(relx=.075, rely=.78, anchor='center')
+            refreshButton.place(relx=.06, rely=.78, anchor='center')
         
         finishBuildButton.place_forget()
         buildType = getBuildType(tableName)
@@ -1007,16 +1025,18 @@ def viewBuilds(location, callLocation):
     buildTree = ttk.Treeview(viewBuildsWindow, selectmode = 'browse')
     buildTreeScrollbar = tk.Scrollbar(viewBuildsWindow, orient='vertical', command=buildTree.yview)
     buildTree.configure(yscrollcommand = buildTreeScrollbar.set)
-    buildTree["columns"] = ("1", "2", "3", "4")
+    buildTree["columns"] = ("1", "2", "3", "4", "5")
     buildTree['show'] = 'headings' 
     buildTree.column("1", width = 100, anchor = 'w')
     buildTree.column("2", width = 200, anchor = 'w')
     buildTree.column("3", width = 60, anchor = 'w')
+    buildTree.column("4", width = 100, anchor = 'w')
     buildTree.column("4", width = 130, anchor = 'w')
     buildTree.heading("1", text = "Manufacturer #")
     buildTree.heading("2", text = "Description")
     buildTree.heading("3", text = "Quantity")
-    buildTree.heading("4", text = "Time added")
+    buildTree.heading("4", text = "Barcode")
+    buildTree.heading("5", text = "Time added")
     
     searchBuild.trace_add('write', buildSearch)
 
